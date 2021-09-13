@@ -1,5 +1,5 @@
 <template>
-  <el-table :data="list" style="width: 100%;padding-top: 15px;">
+  <el-table :data="list" style="margin-top: 15px;padding-top: 15px;width: 100%;">
     <el-table-column label="项目">
       <template slot-scope="scope">
         {{ scope.row.projectName }}

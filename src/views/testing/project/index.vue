@@ -129,8 +129,8 @@ export default {
         create: '新增项目'
       },
       rules: {
-        name: [{ required: true, message: 'this is required', trigger: 'blur' }],
-        description: [{ required: true, message: 'this is required', trigger: 'blur' }]
+        name: [{ required: true, message: '项目名称不能为空', trigger: 'blur' }],
+        description: [{ required: true, message: '项目描述不能为空', trigger: 'blur' }]
       },
       temp: {
         id: undefined,
@@ -172,9 +172,9 @@ export default {
       if (!this.canUpdate) {
         return
       }
-      this.canUpdate = false
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
+          this.canUpdate = false
           projectApi.add(this.temp).then(() => {
             this.fetchData()
             this.dialogFormVisible = false
@@ -184,6 +184,8 @@ export default {
               type: 'success',
               duration: 2000
             })
+          }).catch(() => {
+            this.canUpdate = true
           })
         }
       })
@@ -200,10 +202,10 @@ export default {
       if (!this.canUpdate) {
         return
       }
-      this.canUpdate = false
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
           const tempData = Object.assign({}, this.temp)
+          this.canUpdate = false
           projectApi.update(tempData).then(() => {
             this.fetchData()
             this.dialogFormVisible = false
@@ -213,6 +215,8 @@ export default {
               type: 'success',
               duration: 2000
             })
+          }).catch(() => {
+            this.canUpdate = true
           })
         }
       })

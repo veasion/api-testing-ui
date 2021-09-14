@@ -7,3 +7,12 @@ export function runScript(data) {
     data
   })
 }
+
+export function toScript(params) {
+  return request({
+    url: '/api/script/toScript',
+    method: 'get',
+    params
+  })
+}
+

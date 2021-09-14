@@ -143,19 +143,26 @@ export const asyncRoutes = [
         name: 'TestCase',
         component: () => import('@/views/testing/testCase/index'),
         meta: { title: '测试用例', icon: 'task-cfg' }
+      },
+      {
+        path: 'testCase/:id?',
+        name: 'TestCaseConfig',
+        component: () => import('@/views/testing/testCase/config'),
+        meta: { title: '测试用例编辑' },
+        hidden: true
       }
     ]
   },
   {
-    path: '/testing/executor',
+    path: '/testing/strategy',
     component: Layout,
-    redirect: '/testing/executor',
+    redirect: '/testing/strategy',
     meta: { title: '执行策略', icon: 'exe-cfg' },
     children: [
       {
-        path: 'executor',
-        name: 'Executor',
-        component: () => import('@/views/testing/executor/index'),
+        path: 'strategy',
+        name: 'Strategy',
+        component: () => import('@/views/testing/strategy/index'),
         meta: { title: '执行策略', icon: 'exe-cfg' }
       }
     ]

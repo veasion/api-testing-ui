@@ -258,7 +258,7 @@ export default {
           '\t\t\tlet apiLog = scriptContext.apiLogList[i];\n' +
           '\t\t\tif (apiLog.status == 3) {\n' +
           '\t\t\t\t// 执行不通过的请求\n' +
-          '\t\t\t\tsendNotice(projectName + \', 接口: \' + apiLog.url + \'执行失败\');\n' +
+          '\t\t\t\tsendNotice(projectName + \', 接口: \' + apiLog.url + \' 执行失败\');\n' +
           '\t\t\t}\n' +
           '\t\t}\n' +
           '\t}\n' +

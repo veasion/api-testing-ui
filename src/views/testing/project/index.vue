@@ -90,36 +90,19 @@
         </el-button>
       </div>
     </el-dialog>
-    <el-dialog :visible.sync="dialogPluginVisible" title="Reading statistics">
-      <el-table :data="pluginData" border fit highlight-current-row style="width: 100%">
-        <el-table-column prop="key" label="Channel" />
-        <el-table-column prop="pv" label="Pv" />
-      </el-table>
-      <span slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="dialogPvVisible = false">确认</el-button>
-      </span>
-    </el-dialog>
   </div>
 </template>
 
 <script>
 import * as projectApi from '@/api/project'
-import waves from '@/directive/waves'
 import Pagination from '@/components/Pagination'
+import waves from '@/directive/waves'
 
 export default {
   name: 'Project',
   components: { Pagination },
   directives: { waves },
   filters: {
-    statusFilter(status) {
-      const statusMap = {
-        published: 'success',
-        draft: 'gray',
-        deleted: 'danger'
-      }
-      return statusMap[status]
-    }
   },
   data() {
     return {
@@ -132,9 +115,6 @@ export default {
         pageSize: 10,
         name: ''
       },
-      pluginTypeOptions: ['reader', 'writer'],
-      dialogPluginVisible: false,
-      pluginData: [],
       dialogFormVisible: false,
       dialogStatus: '',
       textMap: {

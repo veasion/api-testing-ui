@@ -1,9 +1,9 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-input v-model="listQuery.url" placeholder="URL" style="width: 200px;" class="filter-item" />
-      <el-input v-model="listQuery.apiName" placeholder="api命名" style="width: 200px;" class="filter-item" />
-      <el-input v-model="listQuery.apiDesc" placeholder="请求描述" style="width: 200px;" class="filter-item" />
+      <el-input v-model="listQuery.url" placeholder="URL" style="width: 150px;" class="filter-item" />
+      <el-input v-model="listQuery.apiName" placeholder="api命名" style="width: 150px;" class="filter-item" />
+      <el-input v-model="listQuery.apiDesc" placeholder="请求描述" style="width: 150px;" class="filter-item" />
       <el-select v-model="listQuery.projectId" clearable filterable placeholder="所属项目" class="filter-item">
         <el-option v-for="item in projectList" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
@@ -22,13 +22,16 @@
       fit
       highlight-current-row
     >
-      <el-table-column align="center" label="序号" width="95">
+      <!--<el-table-column align="center" label="序号" width="95">
         <template slot-scope="scope">{{ scope.$index+1 }}</template>
+      </el-table-column>-->
+      <el-table-column label="项目名称" align="center" width="120px">
+        <template slot-scope="scope">{{ scope.row.projectName }}</template>
       </el-table-column>
-      <el-table-column label="URL" align="center">
+      <el-table-column :show-overflow-tooltip="true" label="URL" align="center" width="300px">
         <template slot-scope="scope">{{ scope.row.url }}</template>
       </el-table-column>
-      <el-table-column label="api命名" align="center">
+      <el-table-column label="api命名" align="center" width="150px">
         <template slot-scope="scope">{{ scope.row.apiName }}</template>
       </el-table-column>
       <el-table-column label="请求描述" align="center">
@@ -151,11 +154,11 @@
 <script>
 import * as apiRequest from '@/api/api-request'
 import { list } from '@/api/project'
-import waves from '@/directive/waves'
 import Pagination from '@/components/Pagination'
 import JsonEditor from '@/components/JsonEditor'
 import TextEditor from '@/components/TextEditor'
 import ScriptExecute from '@/components/ScriptExecute'
+import waves from '@/directive/waves'
 
 export default {
   name: 'Api',
@@ -172,11 +175,12 @@ export default {
       listQuery: {
         pageNo: 1,
         pageSize: 10,
-        name: ''
+        projectId: null,
+        url: '',
+        apiName: '',
+        apiDesc: ''
       },
       projectList: [],
-      pluginTypeOptions: ['reader', 'writer'],
-      pluginData: [],
       dialogFormVisible: false,
       dialogStatus: '',
       textMap: {
@@ -214,7 +218,6 @@ export default {
         body: '',
         script: undefined
       },
-      bodyJson: '',
       visible: true,
       headersPlaceholder: '{\"Content-Type\": \"application/json;charset=UTF-8\", \"Authorization\": \"${token}\"}'
     }

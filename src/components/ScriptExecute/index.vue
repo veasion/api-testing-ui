@@ -80,9 +80,7 @@ export default {
             }
           }
         }
-        if (!str) {
-          str = this.result.result || null
-        }
+        str += '\r\n' + this.result.result
         try {
           this.resultStr = (typeof str) === 'string' ? str : JSON.stringify(str)
         } catch (e) {

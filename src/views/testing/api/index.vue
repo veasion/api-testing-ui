@@ -76,7 +76,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="请求方法" prop="method">
-              <el-select v-model="temp.method" placeholder="请选择">
+              <el-select v-model="temp.method" placeholder="请选择" @change="changeMethod">
                 <el-option v-for="item in methodList" :key="item.method" :label="item.method" :value="item.method" />
               </el-select>
             </el-form-item>
@@ -112,7 +112,7 @@
               <el-input v-model="temp.apiName" placeholder="请输入api命名，唯一，如: /user/getById" />
             </el-form-item>
           </el-col>
-          <el-col v-if="temp.method === 'POST'" :span="12" prop="contentType">
+          <el-col v-if="hasBodyMethod(temp.method)" :span="12" prop="contentType">
             <el-form-item label="Content-Type" prop="contentType">
               <el-select v-model="temp.contentType" placeholder="请选择">
                 <el-option v-for="item in contentTypeList" :key="item.contentType" :label="item.contentType" :value="item.contentType" />
@@ -129,9 +129,9 @@
           </el-col>
         </el-row>
       </el-form>
-      <div v-if="temp.method === 'POST'" style="color: #606266;font-size: 14px;margin-bottom: 15px;font-weight: bold;">请求 Body：</div>
-      <json-editor v-if="temp.method === 'POST' && temp.contentType === 'application/json'" ref="jsonEditor" v-model="temp.body" />
-      <text-editor v-else-if="temp.method === 'POST'" ref="jsonEditor" v-model="temp.body" />
+      <div v-if="hasBodyMethod(temp.method)" style="color: #606266;font-size: 14px;margin-bottom: 15px;font-weight: bold;">请求 Body：</div>
+      <json-editor v-if="hasBodyMethod(temp.method) && temp.contentType === 'application/json'" ref="jsonEditor" v-model="temp.body" />
+      <text-editor v-else-if="hasBodyMethod(temp.method)" ref="textEditor" v-model="temp.body" />
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">
           取消
@@ -185,7 +185,10 @@ export default {
       },
       methodList: [
         { method: 'GET' },
-        { method: 'POST' }
+        { method: 'POST' },
+        { method: 'PUT' },
+        { method: 'PATCH' },
+        { method: 'DELETE' }
       ],
       contentTypeList: [
         { contentType: 'application/json' },
@@ -213,7 +216,7 @@ export default {
       },
       bodyJson: '',
       visible: true,
-      headersPlaceholder: '{\"Content-Type\": \"application/json;charset=UTF-8\", \"Cookie\": \"ut=${ut}\"}'
+      headersPlaceholder: '{\"Content-Type\": \"application/json;charset=UTF-8\", \"Authorization\": \"${token}\"}'
     }
   },
   watch: {
@@ -387,31 +390,39 @@ export default {
         }
       })
     },
+    hasBodyMethod(method) {
+      return method === 'POST' || method === 'PUT' || method === 'PATCH'
+    },
+    changeMethod() {
+      this.temp.contentType = null
+      if (this.temp.method === 'GET') {
+        this.temp.body = null
+      }
+    },
     runScript(obj) {
       let script = ''
       if (obj.id) {
-        script += 'http.request(\'' + obj.apiName + '\', {})'
+        script += '// 如果请求中有${name}参数则可以通过如下方式传参\r\n'
+        script += '// http.request(\'' + obj.apiName + '\', { name: \'veasion\' })\r\n\r\n'
+        script += 'http.request(\'' + obj.apiName + '\')'
       } else {
         if (obj.apiName) {
           script += '// 保存后可以通过apiName请求\r\n'
-          script += '// http.request(\'' + obj.apiName + '\', {})\r\n\r\n'
+          script += '// http.request(\'' + obj.apiName + '\')\r\n\r\n'
         }
         this.handleHeader(obj, obj.contextType)
-        const url = obj.url || ''
-        const body = obj.body || ''
-        if (obj.method === 'POST') {
-          if (obj.headersJson) {
-            if (obj.headersJson.indexOf('application/json')) {
-              script += 'http.post(\'' + url + '\', ' + body + ', ' + obj.headersJson + ')'
-            } else {
-              script += 'http.post(\'' + url + '\', \'' + body + '\', ' + obj.headersJson + ')'
-            }
-          } else {
-            script += 'http.post(\'' + url + '\', \'' + body + '\')'
-          }
+        let code = ''
+        if (obj.body && obj.headersJson && obj.headersJson.indexOf('application/json')) {
+          code = 'http.request(\'%url\', \'%method\', %body, %headers)'
+        } else if (obj.headersJson) {
+          code = 'http.request(\'%url\', \'%method\', \'%body\', %headers)'
         } else {
-          script += 'http.get(\'' + url + '\')'
+          code = 'http.request(\'%url\', \'%method\', \'%body\', null)'
         }
+        script += code.replace('%url', obj.url || '')
+          .replace('%method', obj.method || 'GET')
+          .replace('%body', obj.body || '')
+          .replace('%headers', obj.headersJson)
       }
       this.$refs.scriptExecute.show(obj.projectId, script)
     }

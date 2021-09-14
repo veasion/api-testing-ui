@@ -33,15 +33,20 @@ export default {
   },
   data() {
     return {
-      data: null,
+      data: {},
       dialogPluginVisible: false
     }
   },
   created() {
-    this.fetchData()
   },
   mounted() {
-
+    this.fetchData()
+    const internal = setInterval(() => {
+      this.fetchData()
+    }, 1000)
+    this.$once('hook:beforeDestroy', function() {
+      clearInterval(internal)
+    })
   },
   methods: {
     fetchData() {

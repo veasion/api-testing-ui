@@ -7,7 +7,6 @@
         placeholder="项目名称"
         style="width: 200px;"
         class="filter-item"
-        @keyup.enter.native="handleFilter"
       />
       <el-button v-waves class="filter-item" type="primary" icon="el-icon-search" @click="fetchData">
         搜索
@@ -37,13 +36,27 @@
         <template slot-scope="scope">{{ scope.row.createUsername }}
         </template>
       </el-table-column>
+      <el-table-column label="是否启用" align="center" width="150">
+        <template slot-scope="scope">
+          <el-switch
+            v-model="scope.row.isAvailable"
+            active-color="#00A854"
+            active-text="启用"
+            :active-value="1"
+            inactive-color="#F04134"
+            inactive-text="停用"
+            :inactive-value="0"
+            @change="changeSwitch(scope.row)"
+          />
+        </template>
+      </el-table-column>
       <el-table-column label="创建时间" width="200" align="center">
         <template slot-scope="scope">{{ scope.row.createTime }}</template>
       </el-table-column>
       <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
         <template slot-scope="{row}">
           <el-button type="primary" size="mini" @click="handleUpdate(row)">
-            编辑
+            配置
           </el-button>
           <el-button slot="reference" size="mini" type="danger" @click="handleDelete(row)">
             删除
@@ -59,13 +72,13 @@
       @pagination="fetchData"
     />
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="800px">
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="400px">
       <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="100px">
         <el-form-item label="项目名称" prop="name">
-          <el-input v-model="temp.name" placeholder="项目名称" style="width: 40%" />
+          <el-input v-model="temp.name" placeholder="项目名称" />
         </el-form-item>
         <el-form-item label="项目描述" prop="description">
-          <el-input v-model="temp.description" placeholder="项目描述" style="width: 40%" />
+          <el-input v-model="temp.description" placeholder="项目描述" />
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -169,49 +182,50 @@ export default {
       })
     },
     createData() {
-      if (!this.canUpdate) {
-        return
-      }
-      this.$refs['dataForm'].validate((valid) => {
-        if (valid) {
-          this.canUpdate = false
-          projectApi.add(this.temp).then(() => {
-            this.fetchData()
-            this.dialogFormVisible = false
-            this.$notify({
-              title: 'Success',
-              message: '创建成功',
-              type: 'success',
-              duration: 2000
-            })
-          }).catch(() => {
-            this.canUpdate = true
-          })
+      this.saveOrUpdate(this.temp, false)
+    },
+    handleUpdate(row) {
+      // this.temp = Object.assign({}, row)
+      // this.dialogStatus = 'update'
+      // this.dialogFormVisible = true
+      // this.$nextTick(() => {
+      //   this.$refs['dataForm'].clearValidate()
+      // })
+      this.$router.push({
+        name: 'ProjectConfig',
+        params: {
+          id: row.id
         }
       })
     },
-    handleUpdate(row) {
-      this.temp = Object.assign({}, row)
-      this.dialogStatus = 'update'
-      this.dialogFormVisible = true
-      this.$nextTick(() => {
-        this.$refs['dataForm'].clearValidate()
+    changeSwitch(row) {
+      projectApi.update({ id: row.id, isAvailable: row.isAvailable }).then(() => {
+        this.fetchData()
+        this.$notify({
+          title: 'Success',
+          message: '操作成功',
+          type: 'success',
+          duration: 2000
+        })
       })
     },
     updateData() {
+      const tempData = Object.assign({}, this.temp)
+      this.saveOrUpdate(tempData, true)
+    },
+    saveOrUpdate(obj, isUpdate) {
       if (!this.canUpdate) {
         return
       }
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          const tempData = Object.assign({}, this.temp)
           this.canUpdate = false
-          projectApi.update(tempData).then(() => {
+          projectApi[isUpdate ? 'update' : 'add'](obj).then(() => {
             this.fetchData()
             this.dialogFormVisible = false
             this.$notify({
               title: 'Success',
-              message: '修改成功',
+              message: isUpdate ? '更新成功' : '创建成功',
               type: 'success',
               duration: 2000
             })

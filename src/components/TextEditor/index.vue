@@ -37,6 +37,7 @@ export default {
       lint: true
     })
 
+    // this.textEditor.setOption('scrollbarStyle', 'simple' || 'overlay')
     this.textEditor.setValue(this.value ? this.value : '')
     this.textEditor.on('change', cm => {
       this.$emit('changed', cm.getValue())
@@ -46,6 +47,9 @@ export default {
   methods: {
     getValue() {
       return this.textEditor.getValue()
+    },
+    getEditor() {
+      return this.textEditor
     }
   }
 }

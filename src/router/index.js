@@ -108,6 +108,13 @@ export const asyncRoutes = [
         name: 'Project',
         component: () => import('@/views/testing/project/index'),
         meta: { title: '项目管理', icon: 'project' }
+      },
+      {
+        path: 'config/:id',
+        name: 'ProjectConfig',
+        component: () => import('@/views/testing/project/config'),
+        meta: { title: '项目配置' },
+        hidden: true
       }
     ]
   },
@@ -200,7 +207,7 @@ export const asyncRoutes = [
 ]
 
 const createRouter = () => new Router({
-  // mode: 'history', // require service support
+  // mode: 'history',
   scrollBehavior: () => ({ y: 0 }),
   routes: constantRoutes
 })

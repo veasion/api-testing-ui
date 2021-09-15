@@ -60,7 +60,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="2">
-            <span title="调试脚本"><svg-icon icon-class="run" class="run-but" @click.native="runScript('beforeScript')"/></span>
+            <span title="调试脚本"><svg-icon icon-class="run" class="run-but" @click.native="runScript('beforeScript')" /></span>
           </el-col>
         </el-row>
         <el-row :gutter="20">
@@ -78,7 +78,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="2">
-            <span title="调试脚本"><svg-icon icon-class="run" class="run-but" @click.native="runScript('afterScript')"/></span>
+            <span title="调试脚本"><svg-icon icon-class="run" class="run-but" @click.native="runScript('afterScript')" /></span>
           </el-col>
         </el-row>
         <el-row :gutter="20">
@@ -96,7 +96,7 @@
             </el-form-item>
           </el-col>
           <el-col :span="2">
-            <span title="调试脚本"><svg-icon icon-class="run" class="run-but" @click.native="runScript('exceptionScript')"/></span>
+            <span title="调试脚本"><svg-icon icon-class="run" class="run-but" @click.native="runScript('exceptionScript')" /></span>
           </el-col>
         </el-row>
       </el-form>

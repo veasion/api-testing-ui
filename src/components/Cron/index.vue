@@ -19,7 +19,7 @@
       <el-tab-pane label="周" name="week">
         <week v-model="weekVal" lable="周" />
       </el-tab-pane>
-      <el-tab-pane label="年" name="year">
+      <el-tab-pane v-if="year" label="年" name="year">
         <year v-model="yearVal" lable="年" />
       </el-tab-pane>
     </el-tabs>
@@ -31,7 +31,7 @@
       <el-table-column prop="dVal" label="日" width="70" />
       <el-table-column prop="monthVal" label="月" width="70" />
       <el-table-column prop="weekVal" label="周" width="70" />
-      <el-table-column prop="yearVal" label="年" />
+      <el-table-column v-if="year" prop="yearVal" label="年" />
     </el-table>
   </div>
 </template>
@@ -55,11 +55,14 @@ export default {
   props: {
     value: {
       type: String
+    },
+    year: {
+      type: Boolean,
+      default: true // spring 3.0 之后只支持6位不支持年，使用时注意传 :year="false"
     }
   },
   data() {
     return {
-      //
       activeName: 's',
       sVal: '',
       mVal: '',
@@ -94,7 +97,12 @@ export default {
       if (this.dVal !== '?' && this.weekVal !== '?') {
         this.$message.error('日期与星期必须有一个为“不指定”')
       }
-      const v = `${this.sVal} ${this.mVal} ${this.hVal} ${this.dVal} ${this.monthVal} ${this.weekVal} ${this.yearVal}`
+      let v
+      if (this.year) {
+        v = `${this.sVal} ${this.mVal} ${this.hVal} ${this.dVal} ${this.monthVal} ${this.weekVal} ${this.yearVal}`
+      } else {
+        v = `${this.sVal} ${this.mVal} ${this.hVal} ${this.dVal} ${this.monthVal} ${this.weekVal}`
+      }
       if (v !== this.value) {
         this.$emit('input', v)
       }
@@ -121,7 +129,9 @@ export default {
       this.dVal = arrays[3]
       this.monthVal = arrays[4]
       this.weekVal = arrays[5]
-      this.yearVal = arrays[6]
+      if (this.year) {
+        this.yearVal = arrays[6]
+      }
     }
   }
 }

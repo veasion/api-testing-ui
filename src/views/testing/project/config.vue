@@ -204,7 +204,7 @@ export default {
           desc: '',
           desc1: '这是一个全局参数配置示例',
           desc2: '请求参数可以通过${xxx}方式替换变量',
-          desc3: 'js中可以通过scriptContext.getEnv().getGlobal(\'xxx\')获取值',
+          desc3: 'js中可以通过env.getGlobal(\'xxx\')获取值',
           desc4: 'http.postJson(\'${baseUrl}\', { username: \'${username}\' })'
         }
       } else if (name === 'beforeScript') {
@@ -220,7 +220,7 @@ export default {
           '\n' +
           'let token = result.data.token;\n' +
           'log.info(\'token: \' + token);\n' +
-          'scriptContext.getEnv().setGlobal("token", token);\n' +
+          'env.setGlobal("token", token);\n' +
           '\n' +
           '// 请求拦截处理，设置授权headers\n' +
           'scriptContext.addRequestProcessor(function(request) {\n' +

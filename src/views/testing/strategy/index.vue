@@ -66,26 +66,33 @@
         <template slot-scope="scope">{{ scope.row.createUsername }}
         </template>
       </el-table-column>
-      <el-table-column label="创建时间" width="200" align="center">
-        <template slot-scope="scope">{{ scope.row.createTime }}</template>
+      <el-table-column label="下次触发时间" align="center" width="120">
+        <template slot-scope="scope">
+          <el-popover placement="bottom" width="160" @show="nextTriggerTime(scope.row)">
+            <h5 v-html="triggerNextTimes" style="text-align: center" />
+            <el-button slot="reference" size="small">查看</el-button>
+          </el-popover>
+        </template>
       </el-table-column>
-      <el-table-column label="操作" align="center" width="230" class-name="small-padding fixed-width">
+      <el-table-column label="执行状态" align="center" width="80">
+        <template slot-scope="{row}"> {{ row.status | statusFilter }}</template>
+      </el-table-column>
+      <el-table-column label="操作" align="center" fixed="right">
         <template slot-scope="{row}">
-          <el-button v-if="row.type === 3" size="mini" @click="runScript(row)">
-            测试
-          </el-button>
-          <el-button v-if="row.strategy === 1" size="mini" @click="trigger(row)">
-            触发任务
-          </el-button>
-          <el-button v-if="row.strategy === 2" size="mini" @click="runPressure(row)">
-            压测
-          </el-button>
-          <el-button type="primary" size="mini" @click="handleUpdate(row)">
-            编辑
-          </el-button>
-          <el-button slot="reference" size="mini" type="danger" @click="handleDelete(row)">
-            删除
-          </el-button>
+          <el-dropdown trigger="click">
+            <span class="el-dropdown-link" style="cursor: default">
+              <span>操作</span>
+              <i class="el-icon-arrow-down el-icon--right" />
+            </span>
+            <el-dropdown-menu slot="dropdown">
+              <el-dropdown-item v-if="row.type === 3" @click.native="runScript(row)">测试脚本</el-dropdown-item>
+              <el-dropdown-item v-if="row.strategy === 1" @click.native="trigger(row)">执行一次</el-dropdown-item>
+              <el-dropdown-item v-if="row.strategy === 2" @click.native="runPressure(row)">压测</el-dropdown-item>
+              <el-dropdown-item @click.native="toLogView(row)">查询日志</el-dropdown-item>
+              <el-dropdown-item divided @click.native="handleUpdate(row)">编辑</el-dropdown-item>
+              <el-dropdown-item @click.native="handleDelete(row)">删除</el-dropdown-item>
+            </el-dropdown-menu>
+          </el-dropdown>
         </template>
       </el-table-column>
     </el-table>
@@ -135,7 +142,7 @@
           </el-col>
           <el-col v-if="temp.strategy === 2" :span="8">
             <el-form-item label="线程数" prop="threadCount">
-              <el-input-number v-model="temp.threadCount" :min="1" :max="1000" size="mini" style="width: 100px;" />
+              <el-input-number v-model="temp.threadCount" :min="1" :max="1000" size="medium" />
             </el-form-item>
           </el-col>
           <el-col v-else :span="8">
@@ -145,7 +152,7 @@
               width="60%"
               append-to-body
             >
-              <cron v-model="temp.jobCron" />
+              <cron v-model="temp.jobCron" :year="false" />
               <span slot="footer" class="dialog-footer">
                 <el-button @click="showCronBox = false">关闭</el-button>
                 <el-button type="primary" @click="showCronBox = false">确 定</el-button>
@@ -169,17 +176,17 @@
           </el-col>
           <el-col v-if="threadStrategy.type === 1" :span="8">
             <el-form-item label="压测时间(ms)">
-              <el-input-number v-model="threadStrategy.timeInMillis" :min="1000" size="mini" style="width: 100px;" />
+              <el-input-number v-model="threadStrategy.timeInMillis" :min="1000" />
             </el-form-item>
           </el-col>
           <el-col v-else :span="8">
             <el-form-item label="执行多少次">
-              <el-input-number v-model="threadStrategy.loopCount" :min="1" :max="9999999" size="mini" style="width: 100px;" />
+              <el-input-number v-model="threadStrategy.loopCount" :min="1" :max="9999999" />
             </el-form-item>
           </el-col>
           <el-col :span="8">
-            <el-form-item label="并发间隔时间">
-              <el-input-number v-model="threadStrategy.intervalInMillis" :min="-1" size="mini" style="width: 100px;" />
+            <el-form-item label="并发间隔(ms)">
+              <el-input-number v-model="threadStrategy.intervalInMillis" :min="-1" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -207,12 +214,26 @@
         </el-button>
       </div>
     </el-dialog>
+    <el-dialog title="压测结果" :visible.sync="resultVisible">
+      <div>
+        <el-form-item label="refLogId">
+          <el-input v-model="refLogId" />
+        </el-form-item>
+      </div>
+      <div v-if="pressureData != null">
+        压测结果: <br>{{ JSON.stringify(pressureData) }}
+      </div>
+      <div slot="footer" class="dialog-footer">
+        <el-button type="primary" @click="queryResultData">查询结果</el-button>
+      </div>
+    </el-dialog>
     <script-execute ref="scriptExecute" />
   </div>
 </template>
 
 <script>
 import { list } from '@/api/project'
+import * as apiLog from '@/api/api-log'
 import Pagination from '@/components/Pagination'
 import JavascriptEditor from '@/components/JavascriptEditor'
 import ScriptExecute from '@/components/ScriptExecute'
@@ -240,6 +261,14 @@ export default {
         2: '压测'
       }
       return map[value]
+    },
+    statusFilter(value) {
+      const map = {
+        1: '部分成功',
+        2: '全部成功',
+        3: '失败'
+      }
+      return map[value]
     }
   },
   data() {
@@ -259,6 +288,14 @@ export default {
       },
       projectList: [],
       testCaseList: [],
+      triggerData: {
+        id: null,
+        row: null,
+        refLogId: null
+      },
+      triggerNextTimes: '',
+      pressureData: null,
+      resultVisible: false,
       dialogFormVisible: false,
       dialogStatus: '',
       textMap: {
@@ -299,7 +336,7 @@ export default {
         type: 1, // 压测类型：1 按时长 2 按次数
         loopCount: null, // 执行多少次
         timeInMillis: null, // 压测时间
-        intervalInMillis: null // 并发间隔时间
+        intervalInMillis: -1 // 并发间隔时间
       },
       strategyTypeList: [
         { value: 1, label: '按时长' },
@@ -365,7 +402,7 @@ export default {
         type: 1,
         loopCount: null,
         timeInMillis: null,
-        intervalInMillis: null
+        intervalInMillis: -1
       }
     },
     handleCreate() {
@@ -399,15 +436,45 @@ export default {
         }
       })
     },
-    handleUpdate(row) {
+    async handleUpdate(row) {
       this.resetTemp()
-      const data = Object.assign({}, row)
-      try {
-        this.threadStrategy = JSON.parse(data.threadStrategyJson || '{}')
-      } catch (e) {
-        console.log(e)
+      let tempData
+      if (row.type === 2) {
+        const { data } = await apiExecuteStrategy.queryStrategyById(row.id)
+        tempData = data || row
+      } else {
+        tempData = Object.assign({}, row)
       }
-      this.temp = data
+      if (tempData.threadStrategyJson) {
+        try {
+          const threadStrategy = JSON.parse(tempData.threadStrategyJson || '{}')
+          if (threadStrategy.type) {
+            threadStrategy.type = parseInt(threadStrategy.type + '')
+          } else {
+            threadStrategy.type = 1
+          }
+          if (threadStrategy.loopCount) {
+            threadStrategy.loopCount = parseInt(threadStrategy.loopCount + '')
+          } else {
+            threadStrategy.loopCount = null
+          }
+          if (threadStrategy.timeInMillis) {
+            threadStrategy.timeInMillis = parseInt(threadStrategy.timeInMillis + '')
+          } else {
+            threadStrategy.timeInMillis = null
+          }
+          if (threadStrategy.intervalInMillis) {
+            threadStrategy.intervalInMillis = parseInt(threadStrategy.intervalInMillis + '')
+          } else {
+            threadStrategy.intervalInMillis = -1
+          }
+          this.threadStrategy = { ...threadStrategy }
+        } catch (e) {
+          console.log(e)
+        }
+      }
+      this.temp = tempData
+      this.loadTestCase()
       this.dialogStatus = 'update'
       this.dialogFormVisible = true
       this.$nextTick(() => {
@@ -423,6 +490,8 @@ export default {
           type: 'success',
           duration: 2000
         })
+      }).catch(() => {
+        this.fetchData()
       })
     },
     updateData() {
@@ -431,9 +500,10 @@ export default {
       }
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
-          this.canUpdate = false
           this.temp.threadStrategyJson = JSON.stringify(this.threadStrategy || '{}')
+          this.canUpdate = false
           apiExecuteStrategy.update(this.temp).then(() => {
+            this.canUpdate = true
             this.fetchData()
             this.dialogFormVisible = false
             this.$notify({
@@ -484,14 +554,49 @@ export default {
         }
       })
     },
+    toLogView(row) {
+      this.$router.push({
+        name: 'Logs',
+        query: {
+          executeStrategyId: row.id
+        }
+      })
+    },
+    nextTriggerTime(obj) {
+      apiExecuteStrategy.nextTriggerTime(obj.jobCron).then(response => {
+        const { data } = response
+        this.triggerNextTimes = data.join('<br>')
+      })
+    },
     runScript(obj) {
       this.$refs.scriptExecute.show(obj.projectId, obj.script || '')
     },
     trigger(obj) {
-      alert('接口已开发，前端功能待开发...')
+      const row = { ...obj }
+      this.triggerData = { id: obj.id, row, refLogId: null }
+      apiExecuteStrategy.runStrategy(obj.id).then(response => {
+        const refLogId = response.data
+        this.triggerData = { id: row.id, row, refLogId }
+        this.$notify({
+          title: 'Success',
+          message: '触发成功',
+          type: 'success',
+          duration: 2000
+        })
+      })
     },
     runPressure(obj) {
-      alert('接口已开发，前端功能待开发...')
+      this.trigger(obj)
+      this.resultVisible = true
+    },
+    queryResultData() {
+      const strategyId = this.triggerData.id
+      const refLogId = this.triggerData.refLogId
+      // apiLog.sumList
+      // apiLog.queryByStrategyId
+      apiLog.pressureResult(strategyId, refLogId).then(response => {
+        this.pressureData = response.data || {}
+      })
     }
   }
 }

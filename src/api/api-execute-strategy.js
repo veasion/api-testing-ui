@@ -18,6 +18,20 @@ export function list(params) {
   })
 }
 
+export function runStrategy(id) {
+  return request({
+    url: '/api/apiExecuteStrategy/runStrategy?id=' + id,
+    method: 'get'
+  })
+}
+
+export function queryStrategyById(id) {
+  return request({
+    url: '/api/apiExecuteStrategy/queryStrategyById?id=' + id,
+    method: 'get'
+  })
+}
+
 export function getById(id) {
   return request({
     url: '/api/apiExecuteStrategy/getById?id=' + id,
@@ -72,5 +86,12 @@ export function deleteCases(data) {
     url: '/api/apiExecuteStrategy/deleteCases',
     method: 'post',
     data
+  })
+}
+
+export function nextTriggerTime(cron) {
+  return request({
+    url: '/api/apiExecuteStrategy/nextTriggerTime?cron=' + cron,
+    method: 'get'
   })
 }

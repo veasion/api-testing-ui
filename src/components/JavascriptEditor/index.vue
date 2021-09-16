@@ -6,6 +6,7 @@
 
 <script>
 import CodeMirror from 'codemirror'
+import { codeTips } from '@/utils/codeTips'
 import 'codemirror/addon/lint/lint.css'
 import 'codemirror/lib/codemirror.css'
 import 'codemirror/theme/rubyblue.css'
@@ -13,6 +14,7 @@ import 'codemirror/mode/javascript/javascript'
 import 'codemirror/addon/lint/lint'
 import 'codemirror/addon/hint/show-hint.css'
 import 'codemirror/addon/hint/show-hint.js'
+import 'codemirror/addon/hint/anyword-hint.js'
 
 export default {
   name: 'JavascriptEditor',
@@ -20,51 +22,105 @@ export default {
   props: ['value'],
   data() {
     return {
-      textEditor: null
+      editor: null,
+      codeTipsData: {}
     }
   },
   watch: {
     value(value) {
-      const editorValue = this.textEditor.getValue()
+      const editorValue = this.editor.getValue()
       if (value !== editorValue) {
-        this.textEditor.setValue(value || '')
+        this.editor.setValue(value || '')
       }
     }
   },
   mounted() {
-    this.textEditor = CodeMirror.fromTextArea(this.$refs.textarea, {
+    this.editor = CodeMirror.fromTextArea(this.$refs.textarea, {
       lineNumbers: true,
       mode: 'text/javascript',
       gutters: ['CodeMirror-lint-markers'],
       theme: 'rubyblue',
       lint: true,
+      extraKeys: {
+        'Tab': 'autocomplete',
+        'Ctrl-/': this.toggleComment
+      },
       hintOptions: {
         completeSingle: false,
-        tables: {
-          log: ['info', 'debug', 'error'],
-          scriptContext: ['project', 'refLog', 'strategy', 'apiLogList'],
-          env: ['eval', 'get', 'put', 'set', 'setGlobal', 'putGlobal', 'getGlobal'],
-          http: ['request', 'post', 'postJson', 'postFormData', 'get', 'getByParams'],
-          common: ['jsonValue', 'eval', 'md5', 'randCode', 'randInt', 'randMobile', 'formatDate'],
-          assertions: ['assertJsonPath', 'assertTrue', 'assertFalse', 'assertNull', 'assertEmpty', 'assertNotNull', 'assertNotEmpty', 'assertEquals']
-        }
+        hint: this.handleShowHint
       }
     })
 
-    this.textEditor.setValue(this.value ? this.value : '')
-    this.textEditor.on('change', cm => {
+    this.editor.setValue(this.value ? this.value : '')
+
+    this.editor.on('change', cm => {
       this.$emit('changed', cm.getValue())
       this.$emit('input', cm.getValue())
     })
 
-    this.textEditor.on('keyup', (cm) => {
-      this.textEditor.showHint()
-      // CodeMirror.showHint(cm, CodeMirror.hint.deluge, { completeSingle: false })
+    this.editor.on('keyup', (cm, event) => {
+      if (event.ctrlKey) return
+      const code = event.keyCode
+      // 字母
+      if ((code >= 65 && code <= 90) ||
+        // .
+        code === 110 || code === 190 ||
+        // {
+        code === 219 ||
+        // )
+        code === 48) {
+        this.editor.showHint()
+      }
     })
+    this.init()
   },
   methods: {
+    init() {
+      this.codeTipsData = {
+        log: { 'info(message)': null, 'debug(message)': null, 'error(message)': null },
+        scriptContext: {
+          refLog: { id: null },
+          strategy: null,
+          apiLogList: null,
+          project: { name: null }
+        },
+        http: { 'request(apiName)': null, post: null }
+        // http: ['request(apiName)', 'post(url, body, headers)']
+      }
+    },
     getValue() {
-      return this.textEditor.getValue()
+      return this.editor.getValue()
+    },
+    toggleComment() {
+      // 注释
+      this.editor.toggleComment && this.editor.toggleComment({
+        lineComment: '//'
+      })
+    },
+    handleShowHint() {
+      const cursor = this.editor.getCursor()
+      const lineIndex = cursor.line
+      const currentLine = this.editor.getLine(lineIndex)
+      const lastIndex = cursor.ch
+      const tipsResult = codeTips(this.codeTipsData, currentLine, lastIndex, false)
+      if (tipsResult && tipsResult.list && tipsResult.list.length > 0) {
+        // const codeMirrorInstance = this.codeEditorRef.getCodeMirrorInstance()
+        // codeMirrorInstance.Pos(cursor.line, start)
+        // codeMirrorInstance.Pos(cursor.line, end)
+        // const fromCursor = Object.assign(cursor, { ch: lastIndex })
+        // const toCursor = Object.assign(cursor, { ch: lastIndex })
+        return {
+          from: cursor,
+          to: cursor,
+          list: tipsResult.list
+        }
+      } else {
+        return {
+          from: cursor,
+          to: cursor,
+          list: []
+        }
+      }
     }
   }
 }

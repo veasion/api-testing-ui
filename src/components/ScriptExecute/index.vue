@@ -2,7 +2,7 @@
   <el-dialog title="运行脚本" :visible.sync="visible" width="800px" :before-close="handleClose">
     <div class="el-dialog-div">
       <div style="margin-bottom: 10px;">脚本：</div>
-      <javascript-editor v-model="script" />
+      <javascript-editor ref="jsEditor" v-model="script" />
       <div v-if="resultStr" style="margin-top: 15px;margin-bottom: 10px;">执行结果：</div>
       <div class="text-editor-div">
         <text-editor v-if="resultStr" v-model="resultStr" />
@@ -48,6 +48,7 @@ export default {
       this.result = {}
       this.resultStr = ''
       this.visible = true
+      this.$refs.jsEditor && this.$refs.jsEditor.reloadTips(projectId)
     },
     setEnvMap(envMap) {
       envMap = envMap || {}

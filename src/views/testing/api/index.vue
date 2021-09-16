@@ -86,7 +86,7 @@
           </el-col>
           <el-col :span="8">
             <el-form-item label="所属项目" prop="projectId">
-              <el-select v-model="temp.projectId" filterable placeholder="请选择" class="filter-item">
+              <el-select v-model="temp.projectId" filterable placeholder="请选择" class="filter-item" @change="changeProject">
                 <el-option v-for="item in projectList" :key="item.id" :label="item.name" :value="item.id" />
               </el-select>
             </el-form-item>
@@ -263,6 +263,8 @@ export default {
         body: '',
         script: undefined
       }
+    },
+    changeProject() {
     },
     handleCreate() {
       this.resetTemp()

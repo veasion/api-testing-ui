@@ -159,6 +159,9 @@ export default {
         data.projectConfig.globalVarJson = {}
       }
       this.project = data
+      this.$refs.beforeScriptEditor && this.$refs.beforeScriptEditor.reloadTips(this.id)
+      this.$refs.afterScriptEditor && this.$refs.afterScriptEditor.reloadTips(this.id)
+      this.$refs.exceptionScriptEditor && this.$refs.exceptionScriptEditor.reloadTips(this.id)
     },
     update() {
       if (this.project.projectConfig.globalVarJson) {

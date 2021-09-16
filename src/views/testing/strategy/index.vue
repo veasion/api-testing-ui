@@ -201,7 +201,7 @@
         </el-row>
       </el-form>
       <div v-if="temp.type === 3" style="color: #606266;font-size: 14px;margin-bottom: 15px;font-weight: bold;">自定义脚本：</div>
-      <javascript-editor v-if="temp.type === 3" v-model="temp.script" />
+      <javascript-editor ref="scriptEditor" v-if="temp.type === 3" v-model="temp.script" />
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">
           取消
@@ -217,7 +217,7 @@
     <el-dialog title="压测结果" :visible.sync="resultVisible">
       <div>
         <el-form-item label="refLogId">
-          <el-input v-model="refLogId" />
+          <el-input v-model="triggerData.refLogId" />
         </el-form-item>
       </div>
       <div v-if="pressureData != null">
@@ -382,6 +382,7 @@ export default {
         this.temp.caseIds = []
         this.testCaseList = []
       }
+      this.$refs.scriptEditor && this.$refs.scriptEditor.reloadTips(this.temp.projectId)
     },
     resetTemp() {
       this.temp = {

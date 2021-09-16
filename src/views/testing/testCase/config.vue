@@ -96,6 +96,7 @@ export default {
       apiRequest.list({ isAvailable: 1, projectId: this.dataForm.projectId }).then(response => {
         this.apiList = response.data || []
       })
+      this.$refs.scriptEditor && this.$refs.scriptEditor.reloadTips(this.dataForm.projectId)
     },
     update() {
       this.$refs['dataForm'].validate((valid) => {

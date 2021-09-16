@@ -16,3 +16,19 @@ export function toScript(params) {
   })
 }
 
+export function apiNameTips(params) {
+  return request({
+    url: '/api/script/apiNameTips',
+    method: 'get',
+    params
+  })
+}
+
+export function codeTips(params) {
+  return request({
+    url: '/api/script/codeTips',
+    method: 'get',
+    params
+  })
+}
+

@@ -24,11 +24,19 @@ export function apiNameTips(params) {
   })
 }
 
-export function codeTips(params) {
+export function codeTips() {
   return request({
     url: '/api/script/codeTips',
-    method: 'get',
-    params
+    method: 'get'
+  })
+}
+
+export function apiResponseTips(projectId, data) {
+  // data['_maxTimeoutOfSeconds'] = 5
+  return request({
+    url: '/api/script/apiResponseTips/' + (projectId || ''),
+    method: 'post',
+    data
   })
 }
 

@@ -65,12 +65,15 @@ export function codeTips(codeTipsData, currentLine, index) {
           result.push({ displayText: k, text: k.substring(array[i].length) + appendEnd })
         }
       }
-      return result
+      if (i === 0 && result.length === 0) {
+        result = apiResponseTips(matchStr, lastDian, codeTipsData.tempVar)
+      }
+      return otherTips(result, matchStr)
     } else {
       result = newResult
     }
   }
-  return Object.keys(result)
+  return otherTips(Object.keys(result), matchStr)
 }
 
 function apiNameTips(apiNames, apiName, end) {
@@ -86,4 +89,131 @@ function apiNameTips(apiNames, apiName, end) {
     }
   }
   return result
+}
+
+const otherTipsMap = {
+  if: 'if (%code) {\r\n}',
+  var: 'let %var = %code\r\n',
+  for: 'for (const i in %code) {\r\n}',
+  try: 'try{\r\n%code\r\n} catch (e) {\r\nlog.error(\'发生错误\')\r\n}'
+}
+
+function otherTips(result, matchStr) {
+  result = result || []
+  const lastIdx = matchStr.lastIndexOf('.')
+  if (lastIdx < 1) {
+    return result
+  }
+  const end = matchStr.substring(lastIdx + 1)
+  const keys = Object.keys(otherTipsMap)
+  for (const i in keys) {
+    const k = keys[i]
+    if (k.startsWith(end)) {
+      result.push({ displayText: k, text: k.substring(end.length) })
+    }
+  }
+  return result
+}
+
+function apiResponseTips(matchStr, lastDian, tempVar) {
+  let result = tempVar
+  const array = matchStr.replaceAll('[', '.[').split('.')
+  for (let i = 0; i < array.length; i++) {
+    let newResult = null
+    if (i < array.length - 1 || lastDian) {
+      const field = array[i].trim()
+      if (Array.isArray(result)) {
+        if (field.startsWith('[') && field.endsWith(']')) {
+          newResult = result[parseInt(field.substring(1, field.length - 1))]
+        } else if (field === '') {
+          const resp = []
+          for (const idx in result) {
+            if (idx > 10) {
+              break
+            }
+            resp.push({ displayText: '[' + idx + ']', text: '[' + idx + ']' })
+          }
+          return resp
+        } else {
+          return []
+        }
+      } else {
+        newResult = result[field]
+      }
+    }
+    if (!newResult) {
+      const keys = Object.keys(result) || []
+      result = []
+      for (let j = 0; j < keys.length; j++) {
+        const k = (keys[j] + '')
+        if (k.startsWith(array[i]) && k !== array[i]) {
+          result.push({ displayText: k, text: k.substring(array[i].length) })
+        }
+      }
+      return result
+    } else {
+      result = newResult
+    }
+  }
+  return result
+}
+
+export function parseHttpRequestVar(script) {
+  let idx = -1
+  let startIdx = 0
+  const result = {}
+  const httpStr = 'http.request('
+  while ((idx = script.indexOf(httpStr, idx + 1)) > -1) {
+    let varCode = script.substring(startIdx, idx).trim()
+    if (!varCode.endsWith('=')) {
+      continue
+    }
+    varCode = varCode.substring(0, varCode.length - 1).trim()
+    varCode = preToken(varCode)
+    let apiCode = script.substring(idx + httpStr.length).trim()
+    if (apiCode[0] !== '\'' && apiCode[0] !== '\"') {
+      continue
+    }
+    apiCode = bracketContext(apiCode, apiCode[0])
+    if (!apiCode || !apiCode.trim()) {
+      continue
+    }
+    result[varCode] = apiCode.trim()
+    startIdx = idx + httpStr.length
+  }
+  return result
+}
+
+function bracketContext(str, bracket, index) {
+  if (index == null) {
+    index = 0
+  }
+  const sIdx = str.indexOf(bracket, index)
+  if (sIdx < 0) {
+    return null
+  }
+  const eIdx = str.indexOf(bracket, sIdx + 1)
+  if (eIdx < 0) {
+    return null
+  }
+  str = str.substring(sIdx + 1, eIdx)
+  return str.indexOf('\n') > 0 ? null : str
+}
+
+function preToken(str, index) {
+  let startIndex = -1
+  if (index == null) {
+    index = str.length - 1
+  }
+  for (let i = index; i >= 0; i--) {
+    if (str[i] === ' ' || str[i] === '\n') {
+      startIndex = i + 1
+      break
+    }
+  }
+  if (startIndex > 0) {
+    return str.substring(startIndex, index + 1).trim()
+  } else {
+    return str.substring(0, index + 1).trim()
+  }
 }

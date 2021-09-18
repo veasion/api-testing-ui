@@ -3,12 +3,12 @@
     <div class="filter-container">
       <el-input v-model="listQuery.name" placeholder="策略名称" style="width: 150px;" class="filter-item" />
       <el-input v-model="listQuery.desc" placeholder="策略描述" style="width: 150px;" class="filter-item" />
-      <el-select v-model="listQuery.type" clearable filterable placeholder="类型">
+      <el-select v-model="listQuery.type" clearable filterable placeholder="类型" class="filter-item">
         <el-option v-for="item in typeList" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-select v-model="listQuery.strategy" clearable filterable placeholder="执行策略">
+      <!--<el-select v-model="listQuery.strategy" clearable filterable placeholder="执行策略" class="filter-item">
         <el-option v-for="item in strategyList" :key="item.value" :label="item.label" :value="item.value" />
-      </el-select>
+      </el-select>-->
       <el-select v-model="listQuery.projectId" clearable filterable placeholder="所属项目" class="filter-item">
         <el-option v-for="item in projectList" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
@@ -19,7 +19,12 @@
         添加
       </el-button>
     </div>
+    <el-tabs v-model="strategyType" @tab-click="changeTabs">
+      <el-tab-pane label="定时任务" name="1" />
+      <el-tab-pane label="接口压测" name="2" />
+    </el-tabs>
     <el-table
+      v-if="showTable"
       v-loading="listLoading"
       :data="list"
       element-loading-text="Loading"
@@ -45,8 +50,14 @@
       <el-table-column label="执行策略" align="center">
         <template slot-scope="scope">{{ scope.row.strategy | strategyFilter }}</template>
       </el-table-column>
-      <el-table-column label="任务执行cron" align="center" width="150px">
+      <el-table-column v-if="strategyType === '1'" label="任务执行cron" align="center" width="150px">
         <template slot-scope="scope">{{ scope.row.jobCron }}</template>
+      </el-table-column>
+      <el-table-column v-if="strategyType === '2'" label="线程数" align="center" width="150px">
+        <template slot-scope="scope">{{ scope.row.threadCount }}</template>
+      </el-table-column>
+      <el-table-column v-if="strategyType === '2'" label="压测方式" align="center" width="150px">
+        <template slot-scope="scope">{{ scope.row.threadStrategyStr }}</template>
       </el-table-column>
       <el-table-column label="是否启用" align="center" width="150">
         <template slot-scope="scope">
@@ -62,11 +73,7 @@
           />
         </template>
       </el-table-column>
-      <el-table-column label="创建用户" align="center">
-        <template slot-scope="scope">{{ scope.row.createUsername }}
-        </template>
-      </el-table-column>
-      <el-table-column label="下次触发时间" align="center" width="120">
+      <el-table-column v-if="strategyType === '1'" label="下次触发时间" align="center" width="120">
         <template slot-scope="scope">
           <el-popover placement="bottom" width="160" @show="nextTriggerTime(scope.row)">
             <h5 v-html="triggerNextTimes" style="text-align: center" />
@@ -74,8 +81,12 @@
           </el-popover>
         </template>
       </el-table-column>
-      <el-table-column label="执行状态" align="center" width="80">
+      <el-table-column label="最后执行状态" align="center" width="120">
         <template slot-scope="{row}"> {{ row.status | statusFilter }}</template>
+      </el-table-column>
+      <el-table-column label="创建用户" align="center">
+        <template slot-scope="scope">{{ scope.row.createUsername }}
+        </template>
       </el-table-column>
       <el-table-column label="操作" align="center" fixed="right">
         <template slot-scope="{row}">
@@ -274,9 +285,11 @@ export default {
   data() {
     return {
       list: null,
+      showTable: true,
       canUpdate: true,
       listLoading: true,
       total: 0,
+      strategyType: '1',
       listQuery: {
         pageNo: 1,
         pageSize: 10,
@@ -367,9 +380,31 @@ export default {
     fetchData() {
       this.canUpdate = true
       this.listLoading = true
+      this.listQuery.strategy = +this.strategyType
       apiExecuteStrategy.listPage(this.listQuery).then(response => {
+        const data = response.data || []
+        if (data && data.length > 0) {
+          for (const i in data) {
+            let threadStrategyStr = ''
+            if (data[i].strategy === 2 && data[i].threadStrategyJson) {
+              try {
+                const ts = JSON.parse(data[i].threadStrategyJson)
+                if (ts && ts.type === 1) {
+                  // 按时长
+                  threadStrategyStr = ts.timeInMillis + ' ms'
+                } else if (ts) {
+                  // 按次数
+                  threadStrategyStr = ts.loopCount + ' 次'
+                }
+              } catch (e) {
+                threadStrategyStr = '配置错误'
+              }
+            }
+            data[i].threadStrategyStr = threadStrategyStr
+          }
+        }
         this.total = response.total
-        this.list = response.data
+        this.list = data
         this.listLoading = false
       })
     },
@@ -405,6 +440,15 @@ export default {
         timeInMillis: null,
         intervalInMillis: -1
       }
+    },
+    changeTabs() {
+      this.showTable = false
+      this.$nextTick(() => {
+        this.showTable = true
+        this.listQuery.pageNo = 1
+        this.listQuery.pageSize = 10
+        this.fetchData()
+      })
     },
     handleCreate() {
       this.resetTemp()

@@ -1,12 +1,12 @@
 <template>
   <div class="app-container">
     <div class="filter-container">
-      <el-input v-model="listQuery.msg" placeholder="日志内容" style="width: 200px" />
-      <el-input v-model="listQuery.url" placeholder="URL" style="width: 200px" />
-      <el-select v-model="listQuery.status" clearable placeholder="运行状态" style="width: 200px">
+      <el-input v-model="listQuery.msg" placeholder="日志内容" style="width: 200px" class="filter-item" />
+      <el-input v-model="listQuery.url" placeholder="URL" style="width: 200px" class="filter-item" />
+      <el-select v-model="listQuery.status" clearable placeholder="运行状态" style="width: 200px" class="filter-item">
         <el-option v-for="item in statusList" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
-      <el-select v-model="listQuery.refId" clearable placeholder="日志类型" style="width: 200px">
+      <el-select v-model="listQuery.refId" clearable placeholder="日志类型" style="width: 200px" class="filter-item">
         <el-option v-for="item in refTypeList" :key="item.value" :label="item.label" :value="item.value" />
       </el-select>
       <el-select v-model="listQuery.projectId" clearable filterable placeholder="所属项目" class="filter-item">

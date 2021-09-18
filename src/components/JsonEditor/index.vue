@@ -64,7 +64,7 @@ export default {
   height: auto;
   min-height: 300px;
 }
-.json-editor >>> .CodeMirror-scroll{
+.json-editor >>> .CodeMirror-scroll {
   min-height: 300px;
 }
 .json-editor >>> .cm-s-rubyblue span.cm-string {

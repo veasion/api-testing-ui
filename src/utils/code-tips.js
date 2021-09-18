@@ -10,7 +10,7 @@ const otherTipsMap = {
 /**
  * 处理代码提示
  */
-export function codeTips(codeTipsData, currentLine, index) {
+export function codeTips(codeTipsData, currentLine, index, cursor) {
   if (!codeTipsData || !currentLine) {
     return
   }
@@ -43,6 +43,9 @@ export function codeTips(codeTipsData, currentLine, index) {
     } else if (endStr.trim() === ')') {
       appendEnd = '\''
     }
+    if (matchStr.endsWith(').')) {
+      return otherTips([], matchStr, splitIndex)
+    }
     return apiNameTips(codeTipsData.apiNames, matchStr.substring('http.request(\''.length), appendEnd)
   } else if (matchStr.startsWith('http.request("')) {
     let appendEnd = ''
@@ -50,6 +53,9 @@ export function codeTips(codeTipsData, currentLine, index) {
       appendEnd = '")'
     } else if (endStr.trim() === ')') {
       appendEnd = '"'
+    }
+    if (matchStr.endsWith(').')) {
+      return otherTips([], matchStr, splitIndex)
     }
     return apiNameTips(codeTipsData.apiNames, matchStr.substring('http.request("'.length), appendEnd)
   }
@@ -75,7 +81,7 @@ export function codeTips(codeTipsData, currentLine, index) {
         }
       }
       if (i === 0 && result.length === 0) {
-        result = apiResponseTips(matchStr, lastDian, codeTipsData.tempVar)
+        result = apiResponseTips(matchStr, lastDian, codeTipsData.tempVar, cursor)
       }
       return otherTips(result, matchStr, splitIndex)
     } else {
@@ -131,7 +137,7 @@ function randCode(number) {
   return str
 }
 
-function apiResponseTips(matchStr, lastDian, tempVar) {
+function apiResponseTips(matchStr, lastDian, tempVar, cursor) {
   let result = tempVar
   const array = matchStr.replaceAll('[', '.[').split('.')
   for (let i = 0; i < array.length; i++) {
@@ -147,7 +153,9 @@ function apiResponseTips(matchStr, lastDian, tempVar) {
             if (idx > 10) {
               break
             }
-            resp.push({ displayText: '[' + idx + ']', text: '[' + idx + ']' })
+            const from = lastDian ? Object.assign({}, cursor, { ch: cursor.ch - 1 }) : null
+            const to = lastDian ? Object.assign({}, cursor, { ch: cursor.ch }) : null
+            resp.push({ displayText: '[' + idx + ']', text: '[' + idx + ']', from, to })
           }
           return resp
         } else {

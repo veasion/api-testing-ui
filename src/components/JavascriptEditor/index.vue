@@ -170,7 +170,7 @@ export default {
       const lastIndex = cursor.ch
       let list = []
       try {
-        list = codeTips(this.codeTipsData, currentLine, lastIndex)
+        list = codeTips(this.codeTipsData, currentLine, lastIndex, cursor)
         if (list && list.length > 0) {
           for (const i in list) {
             if (list[i].replace) {
@@ -209,7 +209,7 @@ export default {
     height: auto;
     min-height: 300px;
   }
-  .text-editor >>> .CodeMirror-scroll{
+  .text-editor >>> .CodeMirror-scroll {
     min-height: 300px;
   }
   .text-editor >>> .cm-s-rubyblue span.cm-string {

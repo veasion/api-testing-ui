@@ -64,7 +64,7 @@ export default {
   height: auto;
   min-height: 300px;
 }
-.text-editor >>> .CodeMirror-scroll{
+.text-editor >>> .CodeMirror-scroll {
   min-height: 300px;
 }
 .text-editor >>> .cm-s-rubyblue span.cm-string {

@@ -1,3 +1,12 @@
+const otherTipsMap = {
+  if: 'if (%code) {\r\n\r\n}',
+  null: 'if (%code != null) {\r\n\r\n}',
+  var: 'let %var = %code\r\n',
+  for: 'for (const i in %code) {\r\n\r\n}',
+  fori: 'for (let i = 0; i < %code.length; i++) {\r\n\r\n}',
+  try: 'try{\r\n\t%code\r\n} catch (e) {\r\n\tlog.error(\'发生错误\')\r\n}'
+}
+
 /**
  * 处理代码提示
  */
@@ -68,12 +77,12 @@ export function codeTips(codeTipsData, currentLine, index) {
       if (i === 0 && result.length === 0) {
         result = apiResponseTips(matchStr, lastDian, codeTipsData.tempVar)
       }
-      return otherTips(result, matchStr)
+      return otherTips(result, matchStr, splitIndex)
     } else {
       result = newResult
     }
   }
-  return otherTips(Object.keys(result), matchStr)
+  return otherTips(Object.keys(result), matchStr, splitIndex)
 }
 
 function apiNameTips(apiNames, apiName, end) {
@@ -91,28 +100,35 @@ function apiNameTips(apiNames, apiName, end) {
   return result
 }
 
-const otherTipsMap = {
-  if: 'if (%code) {\r\n}',
-  var: 'let %var = %code\r\n',
-  for: 'for (const i in %code) {\r\n}',
-  try: 'try{\r\n%code\r\n} catch (e) {\r\nlog.error(\'发生错误\')\r\n}'
-}
-
-function otherTips(result, matchStr) {
+function otherTips(result, matchStr, splitIndex) {
   result = result || []
   const lastIdx = matchStr.lastIndexOf('.')
   if (lastIdx < 1) {
     return result
   }
+  const start = matchStr.substring(0, lastIdx)
   const end = matchStr.substring(lastIdx + 1)
   const keys = Object.keys(otherTipsMap)
   for (const i in keys) {
     const k = keys[i]
     if (k.startsWith(end)) {
-      result.push({ displayText: k, text: k.substring(end.length) })
+      // result.push({ displayText: k, text: k.substring(end.length) })
+      let code = otherTipsMap[k].replace('%code', start)
+      if (code.indexOf('%var') > -1) {
+        code = code.replace('%var', 'v' + randCode(3))
+      }
+      result.push({ displayText: k, text: code, replace: true, startIndex: splitIndex })
     }
   }
   return result
+}
+
+function randCode(number) {
+  let str = ''
+  for (let i = 0; i < number; i++) {
+    str += Math.floor(Math.random() * 10)
+  }
+  return str
 }
 
 function apiResponseTips(matchStr, lastDian, tempVar) {
@@ -142,6 +158,9 @@ function apiResponseTips(matchStr, lastDian, tempVar) {
       }
     }
     if (!newResult) {
+      if ((typeof result) === 'string') {
+        return []
+      }
       const keys = Object.keys(result) || []
       result = []
       for (let j = 0; j < keys.length; j++) {

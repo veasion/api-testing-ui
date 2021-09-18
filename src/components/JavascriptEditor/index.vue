@@ -57,6 +57,7 @@ export default {
       gutters: ['CodeMirror-lint-markers'],
       theme: 'rubyblue',
       lint: true,
+      cursorHeight: 0.85,
       lineWrapping: false,
       matchBrackets: true,
       autoCloseBrackets: true,
@@ -93,9 +94,11 @@ export default {
         // {
         code === 219 ||
         // )
-        code === 48 ||
+        (code === 48 && event.shiftKey) ||
         // /
-        code === 191) {
+        code === 191 ||
+        // <--
+        code === 8) {
         this.editor.showHint()
         const hints_ul = document.querySelector('ul.CodeMirror-hints')
         if (hints_ul) {
@@ -168,6 +171,14 @@ export default {
       let list = []
       try {
         list = codeTips(this.codeTipsData, currentLine, lastIndex)
+        if (list && list.length > 0) {
+          for (const i in list) {
+            if (list[i].replace) {
+              list[i].from = Object.assign({}, cursor, { ch: list[i].startIndex })
+              list[i].to = Object.assign({}, cursor, { ch: lastIndex })
+            }
+          }
+        }
       } catch (e) {
         console.log(e)
       }

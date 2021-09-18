@@ -48,7 +48,9 @@ export default {
       this.result = {}
       this.resultStr = ''
       this.visible = true
-      this.$refs.jsEditor && this.$refs.jsEditor.reloadTips(projectId)
+      this.$nextTick(() => {
+        this.$refs.jsEditor && this.$refs.jsEditor.reloadTips(projectId)
+      })
     },
     setEnvMap(envMap) {
       envMap = envMap || {}

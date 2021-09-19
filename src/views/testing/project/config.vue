@@ -252,7 +252,7 @@ export default {
           '\t// TODO 压测不处理\n' +
           '} else {\n' +
           '\t// 定时任务\n' +
-          '\tif (scriptContext.refLog == 2) {\n' +
+          '\tif (scriptContext.refLog.status == 2) {\n' +
           '\t\t// 全部执行成功\n' +
           '\t\tsendNotice(projectName + \', 策略\' + strategyName + \'执行通过\');\n' +
           '\t} else {\n' +

@@ -96,9 +96,10 @@
               <i class="el-icon-arrow-down el-icon--right" />
             </span>
             <el-dropdown-menu slot="dropdown">
+              <el-dropdown-item v-if="row.strategy === 1" @click.native="trigger(row, false)">执行一次</el-dropdown-item>
+              <el-dropdown-item v-if="row.strategy === 2 && row.threadCount > 0" @click.native="trigger(row, true)">压测</el-dropdown-item>
+              <el-dropdown-item v-if="row.strategy === 2 && row.status > 0" @click.native="queryResultData(row)">压测结果</el-dropdown-item>
               <el-dropdown-item v-if="row.type === 3" @click.native="runScript(row)">测试脚本</el-dropdown-item>
-              <el-dropdown-item v-if="row.strategy === 1" @click.native="trigger(row)">执行一次</el-dropdown-item>
-              <el-dropdown-item v-if="row.strategy === 2" @click.native="runPressure(row)">压测</el-dropdown-item>
               <el-dropdown-item @click.native="toLogView(row)">查询日志</el-dropdown-item>
               <el-dropdown-item divided @click.native="handleUpdate(row)">编辑</el-dropdown-item>
               <el-dropdown-item @click.native="handleDelete(row)">删除</el-dropdown-item>
@@ -225,17 +226,72 @@
         </el-button>
       </div>
     </el-dialog>
-    <el-dialog title="压测结果" :visible.sync="resultVisible">
-      <div>
-        <el-form-item label="refLogId">
-          <el-input v-model="triggerData.refLogId" />
-        </el-form-item>
+    <el-dialog title="压测结果" top="8vh" width="650px" :visible.sync="resultVisible" :close-on-click-modal="!resultLoading" :before-close="handleResultClose">
+      <div v-if="resultLoading" style="text-align: center;">
+        <img :src="loadingUrl" style="display: block;margin: auto;" />
+        <div style="margin-top: -90px;line-height: 90px;font-size: 16px;">正在压测，请稍后...</div>
       </div>
-      <div v-if="pressureData != null">
-        压测结果: <br>{{ JSON.stringify(pressureData) }}
-      </div>
-      <div slot="footer" class="dialog-footer">
-        <el-button type="primary" @click="queryResultData">查询结果</el-button>
+      <div v-else>
+        <el-form label-position="left" label-width="110px" style="width: 50%;margin: auto">
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="并发数：">
+                {{ pressureData.threadCount }}
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="总请求数：">
+                {{ pressureData.reqCount }}
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="成功率：">
+                {{ pressureData.sucRateBfb }}
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="总请求时长：">
+                {{ pressureData.totalTime + ' ms' }}
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="平均请求时长：">
+                {{ pressureData.avgTime + ' ms' }}
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="QPS(TPS)：">
+                {{ pressureData.tps }}
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="评分：">
+                <div style="height: 100%;vertical-align: middle;">
+                  <el-rate v-model="pressureData.rate" disabled show-score text-color="#ff9900" score-template="{value}分" />
+                </div>
+              </el-form-item>
+            </el-col>
+          </el-row>
+          <el-row :gutter="20">
+            <el-col :span="24">
+              <el-form-item label="压测时间：">
+                {{ pressureData.startTime + '~' + pressureData.endTime }}
+              </el-form-item>
+            </el-col>
+          </el-row>
+        </el-form>
       </div>
     </el-dialog>
     <script-execute ref="scriptExecute" />
@@ -301,14 +357,10 @@ export default {
       },
       projectList: [],
       testCaseList: [],
-      triggerData: {
-        id: null,
-        row: null,
-        refLogId: null
-      },
       triggerNextTimes: '',
-      pressureData: null,
+      pressureData: {},
       resultVisible: false,
+      resultLoading: false,
       dialogFormVisible: false,
       dialogStatus: '',
       textMap: {
@@ -356,16 +408,11 @@ export default {
         { value: 2, label: '按次数' }
       ],
       visible: true,
-      showCronBox: false
+      showCronBox: false,
+      loadingUrl: require('@/assets/loading.gif')
     }
   },
   watch: {
-    // 'type': {
-    //   handler(value) {
-    //   },
-    //   deep: true,
-    //   immediate: true
-    // }
   },
   created() {
     this.init()
@@ -616,32 +663,53 @@ export default {
     runScript(obj) {
       this.$refs.scriptExecute.show(obj.projectId, obj.script || '')
     },
-    trigger(obj) {
-      const row = { ...obj }
-      this.triggerData = { id: obj.id, row, refLogId: null }
-      apiExecuteStrategy.runStrategy(obj.id).then(response => {
-        const refLogId = response.data
-        this.triggerData = { id: row.id, row, refLogId }
-        this.$notify({
-          title: 'Success',
-          message: '触发成功',
-          type: 'success',
-          duration: 2000
-        })
+    trigger(row) {
+      apiExecuteStrategy.runStrategy(row.id).then(response => {
+        if (row.strategy === 2) {
+          this.queryResultData(row, response.data)
+        } else {
+          this.$notify({
+            title: 'Success',
+            message: '触发成功',
+            type: 'success',
+            duration: 2000
+          })
+        }
       })
     },
-    runPressure(obj) {
-      this.trigger(obj)
-      this.resultVisible = true
+    handleResultClose(done) {
+      this.listLoading = false
+      this.pressureData = {}
+      done()
     },
-    queryResultData() {
-      const strategyId = this.triggerData.id
-      const refLogId = this.triggerData.refLogId
-      // apiLog.sumList
-      // apiLog.queryByStrategyId
-      apiLog.pressureResult(strategyId, refLogId).then(response => {
-        this.pressureData = response.data || {}
-      })
+    async queryResultData(row, refLogId) {
+      try {
+        if (refLogId) {
+          this.resultLoading = true
+        }
+        this.resultVisible = true
+        const { data } = await apiLog.pressureResult(row.id, refLogId)
+        this.pressureData = data || {}
+        if (refLogId) {
+          if (data && Object.keys(data).length > 0) {
+            this.resultLoading = false
+            this.$notify({
+              title: 'Success',
+              message: '压测完成',
+              type: 'success',
+              duration: 2000
+            })
+          } else if (this.resultVisible) {
+            setTimeout(() => {
+              this.queryResultData(row, refLogId)
+            }, 1000)
+          }
+        } else {
+          this.resultLoading = false
+        }
+      } catch (e) {
+        this.resultLoading = false
+      }
     }
   }
 }

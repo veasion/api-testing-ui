@@ -95,9 +95,9 @@ export default {
       if (this.dVal === '?' && this.weekVal === '?') {
         this.$message.error('日期与星期不可以同时为“不指定”')
       }
-      if (this.dVal !== '?' && this.weekVal !== '?') {
-        this.$message.error('日期与星期必须有一个为“不指定”')
-      }
+      // if (this.dVal !== '?' && this.weekVal !== '?') {
+      //   this.$message.error('日期与星期必须有一个为“不指定”')
+      // }
       let v
       if (this.year) {
         v = `${this.sVal} ${this.mVal} ${this.hVal} ${this.dVal} ${this.monthVal} ${this.weekVal} ${this.yearVal}`

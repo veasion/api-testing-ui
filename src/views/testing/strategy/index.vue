@@ -116,7 +116,7 @@
       @pagination="fetchData"
     />
 
-    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" width="1000px" :before-close="handleClose">
+    <el-dialog :title="textMap[dialogStatus]" :visible.sync="dialogFormVisible" top="8vh" width="1000px" :before-close="handleClose">
       <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="110px">
         <el-row :gutter="20">
           <el-col :span="8">
@@ -202,18 +202,33 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-row v-if="temp.type === 2" :gutter="20">
-          <el-col :span="24">
+        <el-row :gutter="20">
+          <el-col v-if="temp.type === 2" :span="12">
             <el-form-item label="指定case" prop="caseIds">
               <el-select v-model="temp.caseIds" multiple clearable filterable placeholder="请选择" class="filter-item">
                 <el-option v-for="item in testCaseList" :key="item.id" :label="item.caseName" :value="item.id" />
               </el-select>
             </el-form-item>
           </el-col>
+          <el-col :span="12">
+            <el-form-item label="用户组" prop="userEnvType">
+              <el-radio v-model="threadStrategy.userEnvType" :label="1">项目默认用户</el-radio>
+              <el-radio v-model="threadStrategy.userEnvType" :label="2">自定义用户组</el-radio>
+            </el-form-item>
+          </el-col>
         </el-row>
       </el-form>
-      <div v-if="temp.type === 3" style="color: #606266;font-size: 14px;margin-bottom: 15px;font-weight: bold;">自定义脚本：</div>
-      <javascript-editor ref="scriptEditor" v-if="temp.type === 3" v-model="temp.script" />
+      <div v-if="threadStrategy.userEnvType === 2">
+        <div style="color: #606266;font-size: 14px;margin-bottom: 15px;font-weight: bold;">
+          <span>自定义用户组：</span>
+          <i title="查看示例" class="el-icon-question" style="cursor: pointer" @click="showExample" />
+        </div>
+        <json-editor ref="jsonEditor" v-model="threadStrategy.userEnvMaps" />
+      </div>
+      <div v-if="temp.type === 3">
+        <div style="color: #606266;font-size: 14px;margin-bottom: 15px;font-weight: bold;margin-top: 10px">自定义脚本：</div>
+        <javascript-editor ref="scriptEditor" v-model="temp.script" />
+      </div>
       <div slot="footer" class="dialog-footer">
         <el-button @click="dialogFormVisible = false">
           取消
@@ -294,6 +309,7 @@
         </el-form>
       </div>
     </el-dialog>
+    <example ref="example" />
     <script-execute ref="scriptExecute" />
   </div>
 </template>
@@ -302,6 +318,8 @@
 import { list } from '@/api/project'
 import * as apiLog from '@/api/api-log'
 import Pagination from '@/components/Pagination'
+import Example from '@/components/Example'
+import JsonEditor from '@/components/JsonEditor'
 import JavascriptEditor from '@/components/JavascriptEditor'
 import ScriptExecute from '@/components/ScriptExecute'
 import waves from '@/directive/waves'
@@ -311,7 +329,7 @@ import * as apiExecuteStrategy from '@/api/api-execute-strategy'
 
 export default {
   name: 'Strategy',
-  components: { Pagination, JavascriptEditor, ScriptExecute, Cron },
+  components: { Pagination, Example, JsonEditor, JavascriptEditor, ScriptExecute, Cron },
   directives: { waves },
   filters: {
     typeFilter(value) {
@@ -401,7 +419,9 @@ export default {
         type: 1, // 压测类型：1 按时长 2 按次数
         loopCount: null, // 执行多少次
         timeInMillis: null, // 压测时间
-        intervalInMillis: -1 // 并发间隔时间
+        intervalInMillis: -1, // 并发间隔时间
+        userEnvType: 1, // 用户环境类型：1 项目默认用户 2 自定义用户组
+        userEnvMaps: [] // 用户环境变量
       },
       strategyTypeList: [
         { value: 1, label: '按时长' },
@@ -485,7 +505,9 @@ export default {
         type: 1,
         loopCount: null,
         timeInMillis: null,
-        intervalInMillis: -1
+        intervalInMillis: -1,
+        userEnvType: 1,
+        userEnvMaps: []
       }
     },
     changeTabs() {
@@ -560,6 +582,12 @@ export default {
           } else {
             threadStrategy.intervalInMillis = -1
           }
+          if (threadStrategy.userEnvType) {
+            threadStrategy.userEnvType = parseInt(threadStrategy.userEnvType + '')
+          } else {
+            threadStrategy.userEnvType = 1
+          }
+          threadStrategy.userEnvMaps = threadStrategy.userEnvMaps || []
           this.threadStrategy = { ...threadStrategy }
         } catch (e) {
           console.log(e)
@@ -592,6 +620,16 @@ export default {
       }
       this.$refs['dataForm'].validate((valid) => {
         if (valid) {
+          if (this.threadStrategy &&
+            this.threadStrategy.userEnvMaps &&
+            (typeof this.threadStrategy.userEnvMaps) === 'string') {
+            const str = this.threadStrategy.userEnvMaps.trim()
+            if (!str.startsWith('[') || !str.endsWith(']')) {
+              this.$message.error('用户组必须为JSON数组格式')
+              return
+            }
+            this.threadStrategy.userEnvMaps = JSON.parse(str)
+          }
           this.temp.threadStrategyJson = JSON.stringify(this.threadStrategy || '{}')
           this.canUpdate = false
           apiExecuteStrategy.update(this.temp).then(() => {
@@ -710,6 +748,20 @@ export default {
       } catch (e) {
         this.resultLoading = false
       }
+    },
+    showExample() {
+      const text = '// 线程用户组是每个线程配置不同登录用户账号密码（变量）\n' +
+        '// 数组，每一项表示一个线程用户，如果数组数量小于线程数则默认再从第一条开始取\n' +
+        '// 格式最好保持跟项目配置的全局变量配置一致\n' +
+        '\n' +
+        '[\n' +
+        '  { "username": "user1", "password": "123456" },\n' +
+        '  { "username": "user2", "password": "123456" },\n' +
+        '  { "username": "user3", "password": "123456" },\n' +
+        '  { "username": "user4", "password": "123456" },\n' +
+        '  { "username": "user5", "password": "123456" }\n' +
+        ']'
+      this.$refs.example.show('用户组变量配置示例', 'text', text)
     }
   }
 }

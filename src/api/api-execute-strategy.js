@@ -88,10 +88,3 @@ export function deleteCases(data) {
     data
   })
 }
-
-export function nextTriggerTime(cron) {
-  return request({
-    url: '/api/apiExecuteStrategy/nextTriggerTime?cron=' + cron,
-    method: 'get'
-  })
-}

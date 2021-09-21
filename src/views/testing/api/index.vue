@@ -409,7 +409,7 @@ export default {
       if (obj.id) {
         script += '// 如果请求中有${name}参数则可以通过如下方式传参\r\n'
         script += '// http.request(\'' + obj.apiName + '\', { name: \'veasion\' })\r\n\r\n'
-        script += 'http.request(\'' + obj.apiName + '\')'
+        script += 'let response = http.request(\'' + obj.apiName + '\')'
       } else {
         if (obj.apiName) {
           script += '// 保存后可以通过apiName请求\r\n'

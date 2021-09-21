@@ -2,7 +2,6 @@
 
 ## 说明
 
-[前端地址github](https://github.com/veasion/api_testing_ui)
 [后端地址github](https://github.com/veasion/api_testing)
 
 ## Build Setup

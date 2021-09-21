@@ -25,6 +25,13 @@ export function getById(id) {
   })
 }
 
+export function queryByApiName(apiName, projectId) {
+  return request({
+    url: '/api/apiRequest/queryByApiName?apiName=' + apiName + '&projectId=' + (projectId || ''),
+    method: 'get'
+  })
+}
+
 export function update(data) {
   return request({
     url: '/api/apiRequest/update',

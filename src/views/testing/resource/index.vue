@@ -15,7 +15,7 @@
 </template>
 
 <script>
-import { serverInfo } from '@/api/resource'
+import { serverInfo } from '@/api/public'
 import waves from '@/directive/waves' // waves directive
 
 export default {
@@ -34,6 +34,7 @@ export default {
   data() {
     return {
       data: {},
+      internal: null,
       dialogPluginVisible: false
     }
   },
@@ -41,20 +42,22 @@ export default {
   },
   mounted() {
     this.fetchData()
-    const internal = setInterval(() => {
+    this.internal = setInterval(() => {
       this.fetchData()
     }, 1000)
-    this.$once('hook:beforeDestroy', function() {
-      clearInterval(internal)
+    this.$once('hook:beforeDestroy', () => {
+      clearInterval(this.internal)
     })
   },
   methods: {
     fetchData() {
       serverInfo().then(response => {
         this.data = response.data || {}
-        this.$nextTick(function() {
+        try {
           this.initEcharts(response.data)
-        })
+        } catch (e) {
+          // clearInterval(this.internal)
+        }
       })
     },
     initEcharts(data) {

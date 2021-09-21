@@ -4,8 +4,10 @@
     <e-vue-contextmenu ref="menu" :style="{'z-index': 9998}" class="custom-context-menu">
       <slot>
         <li><a href="javascript:;" @click.prevent="loadResponseTips">刷新接口智能提示</a></li>
+        <li v-for="item in apiNameList" :key="item"><a href="javascript:;" @click.prevent="showApiDetails(item)">{{ item }}</a></li>
       </slot>
     </e-vue-contextmenu>
+    <api-view ref="apiView" />
   </div>
 </template>
 
@@ -25,9 +27,11 @@ import 'codemirror/addon/edit/matchbrackets.js'
 import 'codemirror/addon/edit/closebrackets.js'
 import 'codemirror/addon/search/match-highlighter.js'
 import * as scriptApi from '@/api/api-script'
+import ApiView from '@/components/ApiView'
 
 export default {
   name: 'JavascriptEditor',
+  components: { ApiView },
   // eslint-disable-next-line vue/require-prop-types
   props: ['value'],
   data() {
@@ -38,8 +42,10 @@ export default {
         apiNames: [],
         varCodes: {},
         globalMap: {},
+        apiNameMap: null,
         tempVar: {}
-      }
+      },
+      apiNameList: []
     }
   },
   watch: {
@@ -98,7 +104,9 @@ export default {
         // /
         code === 191 ||
         // <--
-        code === 8) {
+        // code === 8 ||
+        // " or '
+        (code === 222 && this.codeTipsData.apiNameMap)) {
         this.editor.showHint()
         const hints_ul = document.querySelector('ul.CodeMirror-hints')
         if (hints_ul) {
@@ -116,6 +124,7 @@ export default {
     init() {
       // this.codeTipsData.apiNames = ['/user/list', '/order/getById']
       // this.codeTipsData.globalMap = { 'baseUrl': null, 'username': null, 'password': null }
+      // this.codeTipsData.apiNameMap = { '/listRanking': { name: null, id: null, pageSize: null }}
       // this.codeTipsData.varCodes = { http: { 'request(apiName)': null, 'post(url, body, headers)': null } }
       // this.codeTipsData.tempVar = { data: [{ name: 'xxx', userList: [{ id: null }, { name: null }] }] }
       this.reloadTips(this.projectId, true)
@@ -144,12 +153,20 @@ export default {
       })
     },
     loadResponseTips() {
+      this.apiNameList = []
       const data = parseHttpRequestVar(this.editor.getValue())
       if (data && Object.keys(data).length > 0 && this.projectId) {
         scriptApi.apiResponseTips(this.projectId, data).then(response => {
-          this.codeTipsData.tempVar = response.data || {}
+          const data = response.data || {}
+          this.codeTipsData.tempVar = data.tempVar || {}
+          this.codeTipsData.apiNameMap = data.apiNameMap
           this.$message.success('刷新成功')
         })
+        for (const k in data) {
+          if (data[k]) {
+            this.apiNameList.push(data[k])
+          }
+        }
       } else if (!this.projectId) {
         this.$message('请先选择项目')
       } else {
@@ -163,6 +180,10 @@ export default {
         lineComment: '//'
       })
     },
+    showApiDetails(apiName) {
+      this.$refs.apiView.show(apiName, this.projectId)
+      this.$refs.menu.hideMenu()
+    },
     handleShowHint() {
       const cursor = this.editor.getCursor()
       const lineIndex = cursor.line
@@ -170,7 +191,7 @@ export default {
       const lastIndex = cursor.ch
       let list = []
       try {
-        list = codeTips(this.codeTipsData, currentLine, lastIndex, cursor)
+        list = codeTips(this.codeTipsData, currentLine, lastIndex, cursor, this.getValue())
         if (list && list.length > 0) {
           for (const i in list) {
             if (list[i].replace) {

@@ -316,6 +316,7 @@
 
 <script>
 import { list } from '@/api/project'
+import { nextTriggerTime } from '@/api/public'
 import * as apiLog from '@/api/api-log'
 import Pagination from '@/components/Pagination'
 import Example from '@/components/Example'
@@ -693,7 +694,7 @@ export default {
       })
     },
     nextTriggerTime(obj) {
-      apiExecuteStrategy.nextTriggerTime(obj.jobCron).then(response => {
+      nextTriggerTime(obj.jobCron).then(response => {
         const { data } = response
         this.triggerNextTimes = data.join('<br>')
       })

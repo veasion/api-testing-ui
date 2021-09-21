@@ -10,7 +10,7 @@ const otherTipsMap = {
 /**
  * 处理代码提示
  */
-export function codeTips(codeTipsData, currentLine, index, cursor) {
+export function codeTips(codeTipsData, currentLine, index, cursor, script) {
   if (!codeTipsData || !currentLine) {
     return
   }
@@ -25,7 +25,7 @@ export function codeTips(codeTipsData, currentLine, index, cursor) {
   let isEval = false
   let splitIndex = 0
   for (let i = index; i >= 0; i--) {
-    if (startStr[i] === ' ') {
+    if (startStr[i] === ' ' || startStr[i] === ';') {
       splitIndex = i + 1
       break
     }
@@ -33,6 +33,24 @@ export function codeTips(codeTipsData, currentLine, index, cursor) {
       isEval = true
       splitIndex = i + 1
       break
+    }
+    if ((startStr[i] === '\'' || startStr[i] === '"') && codeTipsData.apiNameMap) {
+      const c = startStr[i - 1]
+      if (c === ' ' || c === '\n' || c === ',' || c === '{') {
+        const startEnd = startStr.substring(i + 1, index)
+        const api = lastApiName(script, cursor)
+        if (api && codeTipsData.apiNameMap[api]) {
+          const keys = Object.keys(codeTipsData.apiNameMap[api]) || []
+          const result = []
+          for (let j = 0; j < keys.length; j++) {
+            const k = (keys[j] + '')
+            if (k.startsWith(startEnd) && k !== startEnd) {
+              result.push({ displayText: k, text: k.substring(startEnd.length) })
+            }
+          }
+          return result
+        }
+      }
     }
   }
   const matchStr = startStr.substring(splitIndex, index)
@@ -43,10 +61,7 @@ export function codeTips(codeTipsData, currentLine, index, cursor) {
     } else if (endStr.trim() === ')') {
       appendEnd = '\''
     }
-    if (matchStr.endsWith(').')) {
-      return otherTips([], matchStr, splitIndex)
-    }
-    return apiNameTips(codeTipsData.apiNames, matchStr.substring('http.request(\''.length), appendEnd)
+    return noneTips(apiNameTips(codeTipsData.apiNames, matchStr.substring('http.request(\''.length), appendEnd), matchStr, splitIndex)
   } else if (matchStr.startsWith('http.request("')) {
     let appendEnd = ''
     if (endStr.trim() === '') {
@@ -54,10 +69,7 @@ export function codeTips(codeTipsData, currentLine, index, cursor) {
     } else if (endStr.trim() === ')') {
       appendEnd = '"'
     }
-    if (matchStr.endsWith(').')) {
-      return otherTips([], matchStr, splitIndex)
-    }
-    return apiNameTips(codeTipsData.apiNames, matchStr.substring('http.request("'.length), appendEnd)
+    return noneTips(apiNameTips(codeTipsData.apiNames, matchStr.substring('http.request("'.length), appendEnd), matchStr, splitIndex)
   }
   const lastDian = matchStr.endsWith('.')
   const array = matchStr.split('.')
@@ -102,6 +114,13 @@ function apiNameTips(apiNames, apiName, end) {
     if (apiNames[i].startsWith(apiName)) {
       result.push({ displayText: k, text: k.substring(apiName.length) + end })
     }
+  }
+  return result
+}
+
+function noneTips(result, matchStr, splitIndex) {
+  if (result == null || result.length === 0) {
+    return otherTips(result, matchStr, splitIndex)
   }
   return result
 }
@@ -183,6 +202,37 @@ function apiResponseTips(matchStr, lastDian, tempVar, cursor) {
     }
   }
   return result
+}
+
+function lastApiName(script, cursor) {
+  const lines = script.split('\n')
+  let idx = -1
+  for (let i = cursor.line; i >= 0; i--) {
+    idx = lines[i].lastIndexOf('http.request(')
+    if (idx === -1) {
+      continue
+    }
+    if (i === cursor.line && lines[i].substring(0, cursor.ch).indexOf(')') > 0) {
+      return
+    }
+    if (i < cursor.line && lines[i].substring(idx).indexOf(')') > 0) {
+      return
+    }
+    script = lines[i]
+    break
+  }
+  if (idx < 0) {
+    return
+  }
+  let apiCode = script.substring(idx + 'http.request('.length).trim()
+  if (apiCode[0] !== '\'' && apiCode[0] !== '\"') {
+    return
+  }
+  apiCode = bracketContext(apiCode, apiCode[0])
+  if (!apiCode || !apiCode.trim()) {
+    return
+  }
+  return apiCode.trim()
 }
 
 export function parseHttpRequestVar(script) {

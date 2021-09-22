@@ -139,7 +139,7 @@ export default {
       this.$router.push({
         name: 'TestCaseConfig',
         params: {
-          id: ''
+          id: 0
         }
       })
     },

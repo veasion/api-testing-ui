@@ -83,6 +83,9 @@ export default {
   methods: {
     async init() {
       this.id = this.id || this.$route.params.id || this.$route.query.id
+      if (this.id === 0 || this.id === '0') {
+        this.id = null
+      }
       if (this.id) {
         const { data } = await testCaseApi.getById(this.id)
         this.dataForm = data || {}

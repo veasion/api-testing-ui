@@ -210,7 +210,7 @@
               </el-select>
             </el-form-item>
           </el-col>
-          <el-col :span="12">
+          <el-col v-if="temp.strategy === 2" :span="12">
             <el-form-item label="用户组" prop="userEnvType">
               <el-radio v-model="threadStrategy.userEnvType" :label="1">项目默认用户</el-radio>
               <el-radio v-model="threadStrategy.userEnvType" :label="2">自定义用户组</el-radio>

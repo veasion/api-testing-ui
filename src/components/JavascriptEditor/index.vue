@@ -63,6 +63,8 @@ export default {
       gutters: ['CodeMirror-lint-markers'],
       theme: 'rubyblue',
       lint: true,
+      tabSize: 4,
+      indentUnit: 4,
       cursorHeight: 0.85,
       lineWrapping: false,
       matchBrackets: true,

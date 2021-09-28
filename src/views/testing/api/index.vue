@@ -13,6 +13,12 @@
       <el-button class="filter-item" style="margin-left: 10px;" type="primary" icon="el-icon-edit" @click="handleCreate">
         添加
       </el-button>
+      <el-button class="filter-item" style="margin-left: 10px;" icon="el-icon-upload2" @click="showImport">
+        导入
+      </el-button>
+      <el-button class="filter-item" style="margin-left: 10px;" icon="el-icon-download" @click="handleExport(false)">
+        导出
+      </el-button>
     </div>
     <el-table
       v-loading="listLoading"
@@ -22,9 +28,6 @@
       fit
       highlight-current-row
     >
-      <!--<el-table-column align="center" label="序号" width="95">
-        <template slot-scope="scope">{{ scope.$index+1 }}</template>
-      </el-table-column>-->
       <el-table-column label="项目名称" align="center" width="120px">
         <template slot-scope="scope">{{ scope.row.projectName }}</template>
       </el-table-column>
@@ -147,6 +150,43 @@
         </el-button>
       </div>
     </el-dialog>
+    <el-dialog title="批量导入" :visible.sync="importVisible" width="450px" label-position="left" label-width="110px">
+      <el-form label-position="left" label-width="110px">
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="选择项目">
+              <el-select v-model="importTemp.projectId" filterable placeholder="请选择" class="filter-item">
+                <el-option v-for="item in projectList" :key="item.id" :label="item.name" :value="item.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="选择文件">
+              <input v-if="importVisible" id="excelFileInput" type="file" accept=".xlsx" style="display: block;margin-top: 10px;margin-bottom: 10px" @change="changeFile" />
+              <a @click="handleExport(true)" style="color: #315efb;">下载excel模板</a>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="24">
+            <el-form-item label="生成测试用例">
+              <el-switch
+                v-model="importTemp.autoCase"
+                active-color="#00A854"
+                :active-value="true"
+                :inactive-value="false"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="importVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleImport">确定</el-button>
+      </div>
+    </el-dialog>
     <script-execute ref="scriptExecute" />
   </div>
 </template>
@@ -182,6 +222,12 @@ export default {
         apiDesc: ''
       },
       projectList: [],
+      importTemp: {
+        file: null,
+        autoCase: false,
+        projectId: null
+      },
+      importVisible: false,
       dialogFormVisible: false,
       dialogStatus: '',
       textMap: {
@@ -405,6 +451,51 @@ export default {
         this.temp.body = null
       }
     },
+    showImport() {
+      this.importTemp = {
+        file: null,
+        autoCase: false,
+        projectId: null
+      }
+      this.importVisible = false
+      this.$nextTick(() => {
+        this.importVisible = true
+      })
+    },
+    handleExport(template) {
+      if (template) {
+        apiRequest.downloadTemplate()
+      } else {
+        apiRequest.exportExcel(this.listQuery)
+      }
+    },
+    changeFile(e) {
+      let files
+      if (e) {
+        files = e.currentTarget.files
+      } else {
+        files = document.getElementById('excelFileInput').files
+      }
+      this.importTemp.file = files && files.length > 0 ? files[0] : null
+    },
+    handleImport() {
+      if (!this.importTemp.file) {
+        this.changeFile()
+      }
+      if (!this.importTemp.projectId) {
+        this.$message('请选择项目')
+        return
+      }
+      if (!this.importTemp.file) {
+        this.$message('请选择文件')
+        return
+      }
+      apiRequest.importExcel(this.importTemp).then(() => {
+        this.$message.success('导入成功')
+        this.importVisible = false
+        this.fetchData()
+      })
+    },
     async runScript(obj) {
       let script = ''
       if (obj.id) {
@@ -419,7 +510,7 @@ export default {
         }
       } else {
         if (obj.apiName) {
-          script += '// 保存后可以通过apiName请求\r\n'
+          script += '// 保存后可以通过apiName请求（建议保存后调试）\r\n'
           script += '// http.request(\'' + obj.apiName + '\')\r\n\r\n'
         }
         this.handleHeader(obj, obj.contextType)

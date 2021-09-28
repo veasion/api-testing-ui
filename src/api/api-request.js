@@ -59,3 +59,53 @@ export function deleted(data) {
   })
 }
 
+export function exportExcel(params) {
+  request.get('/api/apiRequest/export', { responseType: 'blob', params }, {
+    responseType: 'arraybuffer',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => {
+    downloadFile(response, 'API接口请求.xlsx')
+  })
+}
+
+export function downloadTemplate() {
+  request.get('/api/apiRequest/downloadTemplate', { responseType: 'blob' }, {
+    responseType: 'arraybuffer',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => {
+    downloadFile(response, 'API接口导入模板.xlsx')
+  })
+}
+
+export function importExcel(data) {
+  const formData = new FormData()
+  formData.append('file', data.file)
+  formData.append('autoCase', data.autoCase)
+  formData.append('projectId', data.projectId)
+  return request.post('/api/apiRequest/import', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+      'Access-Control-Allow-Origin': '*'
+    }
+  })
+}
+
+function downloadFile(data, fileName) {
+  const blob = new Blob([data])
+  if (!!window.ActiveXObject || 'ActiveXObject' in window) {
+    navigator.msSaveBlob(blob, fileName)
+  } else {
+    const link = document.createElement('a')
+    link.download = fileName
+    link.style.display = 'none'
+    link.href = URL.createObjectURL(blob)
+    document.body.appendChild(link)
+    link.click()
+    URL.revokeObjectURL(link.href)
+    document.body.removeChild(link)
+  }
+}

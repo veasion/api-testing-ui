@@ -154,6 +154,7 @@
 <script>
 import * as apiRequest from '@/api/api-request'
 import { list } from '@/api/project'
+import { toScript } from '@/api/api-script'
 import Pagination from '@/components/Pagination'
 import JsonEditor from '@/components/JsonEditor'
 import TextEditor from '@/components/TextEditor'
@@ -404,12 +405,18 @@ export default {
         this.temp.body = null
       }
     },
-    runScript(obj) {
+    async runScript(obj) {
       let script = ''
       if (obj.id) {
         script += '// 如果请求中有${name}参数则可以通过如下方式传参\r\n'
         script += '// http.request(\'' + obj.apiName + '\', { name: \'veasion\' })\r\n\r\n'
-        script += 'let response = http.request(\'' + obj.apiName + '\')'
+        const def = 'let response = http.request(\'' + obj.apiName + '\')'
+        try {
+          const { data } = await toScript({ id: obj.id, var: true })
+          script += (data || def)
+        } catch (e) {
+          script += def
+        }
       } else {
         if (obj.apiName) {
           script += '// 保存后可以通过apiName请求\r\n'

@@ -223,7 +223,7 @@ export default {
           '\n' +
           'let token = result.data.token;\n' +
           'log.info(\'token: \' + token);\n' +
-          'env.setGlobal("token", token);\n' +
+          'env.putContext("token", token);\n' +
           '\n' +
           '// 请求拦截处理，设置授权headers\n' +
           'scriptContext.addRequestProcessor(function(request) {\n' +

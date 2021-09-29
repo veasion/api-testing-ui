@@ -165,7 +165,8 @@
           <el-col :span="24">
             <el-form-item label="选择文件">
               <input v-if="importVisible" id="excelFileInput" type="file" accept=".xlsx" style="display: block;margin-top: 10px;margin-bottom: 10px" @change="changeFile" />
-              <a @click="handleExport(true)" style="color: #315efb;">下载excel模板</a>
+              <div><a @click="handleExport(true)" style="color: #315efb;">下载 excel 模板</a></div>
+              <div><a @click="handleSwaggerExport" style="color: #315efb;">根据 swagger 下载接口模板</a></div>
             </el-form-item>
           </el-col>
         </el-row>
@@ -463,11 +464,23 @@ export default {
       })
     },
     handleExport(template) {
+      this.$message.success('正在下载，请稍后...')
       if (template) {
         apiRequest.downloadTemplate()
       } else {
         apiRequest.exportExcel(this.listQuery)
       }
+    },
+    handleSwaggerExport() {
+      this.$prompt('请输入swagger链接地址', 'swagger接口模板下载', {
+        confirmButtonText: '下载',
+        cancelButtonText: '取消',
+        inputPattern: /^(http|https):\/\/\w+/,
+        inputErrorMessage: '链接不正确'
+      }).then(({ value }) => {
+        this.$message.success('正在下载，请稍后...')
+        apiRequest.downloadSwaggerApi(value)
+      })
     },
     changeFile(e) {
       let files

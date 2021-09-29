@@ -66,7 +66,7 @@ export function exportExcel(params) {
       'Content-Type': 'application/json'
     }
   }).then(response => {
-    downloadFile(response, 'API接口请求.xlsx')
+    downloadFile(response, 'API接口.xlsx')
   })
 }
 
@@ -78,6 +78,17 @@ export function downloadTemplate() {
     }
   }).then(response => {
     downloadFile(response, 'API接口导入模板.xlsx')
+  })
+}
+
+export function downloadSwaggerApi(swaggerUrl) {
+  request.get('/api/apiRequest/downloadSwaggerApi?swaggerUrl=' + swaggerUrl, { responseType: 'blob' }, {
+    responseType: 'arraybuffer',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }).then(response => {
+    downloadFile(response, 'swagger接口.xlsx')
   })
 }
 

@@ -3,7 +3,7 @@
     <div class="filter-container">
       <el-input v-model="listQuery.url" placeholder="URL" style="width: 150px;" class="filter-item" />
       <el-input v-model="listQuery.apiName" placeholder="api命名" style="width: 150px;" class="filter-item" />
-      <el-input v-model="listQuery.apiDesc" placeholder="请求描述" style="width: 150px;" class="filter-item" />
+      <el-input v-model="listQuery.query" placeholder="分组/描述" style="width: 150px;" class="filter-item" />
       <el-select v-model="listQuery.projectId" clearable filterable placeholder="所属项目" class="filter-item">
         <el-option v-for="item in projectList" :key="item.id" :label="item.name" :value="item.id" />
       </el-select>
@@ -37,13 +37,16 @@
       <el-table-column label="api命名" align="center" width="150px">
         <template slot-scope="scope">{{ scope.row.apiName }}</template>
       </el-table-column>
+      <el-table-column label="分组" align="center" width="120px">
+        <template slot-scope="scope">{{ scope.row.apiGroup }}</template>
+      </el-table-column>
       <el-table-column label="请求描述" align="center">
         <template slot-scope="scope">{{ scope.row.apiDesc }}</template>
       </el-table-column>
-      <el-table-column label="请求方法" align="center">
+      <el-table-column label="请求方法" align="center" width="80px">
         <template slot-scope="scope">{{ scope.row.method }}</template>
       </el-table-column>
-      <el-table-column label="创建用户" align="center">
+      <el-table-column label="创建用户" align="center" width="80px">
         <template slot-scope="scope">{{ scope.row.createUsername }}
         </template>
       </el-table-column>
@@ -76,6 +79,20 @@
       <el-form ref="dataForm" :rules="rules" :model="temp" label-position="left" label-width="110px">
         <el-row :gutter="20">
           <el-col :span="8">
+            <el-form-item label="所属项目" prop="projectId">
+              <el-select v-model="temp.projectId" filterable placeholder="请选择" class="filter-item" @change="changeProject">
+                <el-option v-for="item in projectList" :key="item.id" :label="item.name" :value="item.id" />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <el-row :gutter="20">
+          <el-col :span="8">
+            <el-form-item label="分组" prop="apiGroup">
+              <el-input v-model="temp.apiGroup" size="medium" placeholder="请输入分组名称" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="8">
             <el-form-item label="请求描述" prop="apiDesc">
               <el-input v-model="temp.apiDesc" size="medium" placeholder="请输入描述" />
             </el-form-item>
@@ -84,13 +101,6 @@
             <el-form-item label="请求方法" prop="method">
               <el-select v-model="temp.method" placeholder="请选择" @change="changeMethod">
                 <el-option v-for="item in methodList" :key="item.method" :label="item.method" :value="item.method" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="8">
-            <el-form-item label="所属项目" prop="projectId">
-              <el-select v-model="temp.projectId" filterable placeholder="请选择" class="filter-item" @change="changeProject">
-                <el-option v-for="item in projectList" :key="item.id" :label="item.name" :value="item.id" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -220,13 +230,16 @@ export default {
         projectId: null,
         url: '',
         apiName: '',
-        apiDesc: ''
+        apiGroup: '',
+        apiDesc: '',
+        query: ''
       },
       projectList: [],
       importTemp: {
         file: null,
         autoCase: false,
-        projectId: null
+        projectId: null,
+        apiGroup: null
       },
       importVisible: false,
       dialogFormVisible: false,
@@ -250,6 +263,7 @@ export default {
       rules: {
         projectId: [{ required: true, message: '请选择项目', trigger: 'change' }],
         apiName: [{ required: true, message: '命名不能为空', trigger: 'blur' }],
+        apiGroup: [{ required: true, message: '分组名称不能为空', trigger: 'blur' }],
         apiDesc: [{ required: true, message: '接口描述不能为空', trigger: 'blur' }],
         method: [{ required: true, message: '请求方法不能为空', trigger: 'blur' }],
         url: [{ required: true, message: '请求url不能为空', trigger: 'blur' }]
@@ -258,6 +272,7 @@ export default {
         id: undefined,
         projectId: null,
         apiName: '',
+        apiGroup: '',
         apiDesc: '',
         method: null,
         url: '',
@@ -303,6 +318,7 @@ export default {
         id: undefined,
         projectId: null,
         apiName: '',
+        apiGroup: '',
         apiDesc: '',
         method: null,
         url: '',
@@ -456,7 +472,8 @@ export default {
       this.importTemp = {
         file: null,
         autoCase: false,
-        projectId: null
+        projectId: null,
+        apiGroup: null
       }
       this.importVisible = false
       this.$nextTick(() => {
